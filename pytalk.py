@@ -46,9 +46,6 @@ from email.mime.multipart import MIMEMultipart
 from imgurpython import ImgurClient
 import configparser
 
-# Get absolute path of the dir script is run from
-cwd = sys.path[0]
-
 # Define byte commands used to communicate commands to microcontroller
 # [INIT] [TYPE] [CMD] [END]
 # TYPE: AC = aircon
@@ -851,6 +848,9 @@ class _HangoutsClient(sleekxmpp.ClientXMPP):
             msg.reply(reply).send()
                 
 if __name__ == '__main__':
+    # Get absolute path of the dir script is run from
+    cwd = sys.path[0]
+	
     # Read in config values (possible move to it's own function later?)
     config = configparser.ConfigParser()
     config.read(cwd + '/ammcon_config.ini')
