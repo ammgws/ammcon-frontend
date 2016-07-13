@@ -697,8 +697,7 @@ class _HangoutsClient(sleekxmpp.ClientXMPP):
 
             
 def google_authenticate(oauth2_client_ID, oauth2_client_secret):
-    # Start OAuth2 authorisation in order to get access token for logging into Hangouts
-    # If no refresh token exists then get new access + refresh token.
+    # Start authorisation flow to get new access + refresh token.
 
     # Start by getting authorization_code for Hangouts scope. Email info scope used to get email address for login
     # OAUTH2 client ID and secret are obtained through Google Apps Developers Console for the account I use for Ammcon
@@ -713,7 +712,7 @@ def google_authenticate(oauth2_client_ID, oauth2_client_secret):
         ))
     )
     
-    # Print auth URL and wait for authentication code from user.
+    # Print auth URL and wait for user to input authentication code
     print(OAUTH2_LOGIN_URL) 
     auth_code = input("Enter auth code from the above link: ")
 
@@ -736,7 +735,7 @@ def google_authenticate(oauth2_client_ID, oauth2_client_secret):
     with open(cwd + refresh_token_filename, 'w') as file:
         file.write(refresh_token)
 
-    return access_token, email
+    return access_token
     
 def google_refresh(oauth2_client_ID, oauth2_client_secret, refresh_token_filename):
     # Make an access token request using existing refresh token
@@ -754,14 +753,16 @@ def google_refresh(oauth2_client_ID, oauth2_client_secret, refresh_token_filenam
     res = r.json()
     access_token = res['access_token']
     
+    return access_token
+
+def google_getemail(access_token):
     # Get email address for Hangouts login
     authorization_header = {"Authorization": "OAuth %s" % access_token}
     usr_req = requests.get("https://www.googleapis.com/oauth2/v2/userinfo", headers=authorization_header)
     usr_req_res = usr_req.json()
     email = usr_req_res['email']
-
-    return access_token, email
-        
+    return email
+    
 def main():
     # Get absolute path of the dir script is run from
     cwd = sys.path[0]
@@ -815,11 +816,12 @@ def main():
     temp_logger_thread.daemon = True
     temp_logger_thread.start()
     
-    # Authenticate with Google
+    # Authenticate with Google and get access token for logging into Hangouts
     if (not os.path.isfile(cwd + refresh_token_filename)):
-        access_token, email = google_authenticate(oauth2_client_ID, oauth2_client_secret)
+        access_token = google_authenticate(oauth2_client_ID, oauth2_client_secret)
     else:
-        access_token, email = google_refresh(oauth2_client_ID, oauth2_client_secret)
+        access_token = google_refresh(oauth2_client_ID, oauth2_client_secret)
+    username = google_getemail(access_token)
 
     # Setup Hangouts client and register XMPP plugins (order in which they are registered does not matter.)
     # Not using real password for password arg as using OAUTH2 to login (arbitrarily set to 'yarp'.)
