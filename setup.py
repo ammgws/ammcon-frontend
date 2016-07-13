@@ -1,16 +1,16 @@
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+# -*- coding: utf-8 -*-
 
-config = {
-    'description': 'Ammcon server',
-    'author': 'ammgws',
-    'url': 'https://github.com/ammgws/ammcon',
-    'author_email': 'ammgws@users.noreply.github.com',
-    'version': '1.0',
-    'packages': ['NAME'],
-    'name': 'ammcon'
-}
+from setuptools import setup
 
-setup(**config)
+with open('LICENSE') as f:
+    license = f.read()
+
+setup(
+    name='ammcon',
+    version='0.0.1',
+    description='Ammcon server for personal use',
+    author='ammgws',
+    author_email='ammgws@users.noreply.github.com',
+    url='https://github.com/ammgws/ammcon',
+    license=license,
+)
