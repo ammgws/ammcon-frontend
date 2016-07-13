@@ -1,16 +1,9 @@
 #!/home/ammcon/pytalk/py3env-ammcon/bin/python3
 
-'''Pytalk - interface module for Ammcon home automation system
+'''Ammcon - server for Ammcon home automation system'''
 
-Revision history
-20160401 v16; changed to python3 code
-20160629 v17; added support for new living room light, cleaning up code, update graphing function, 
-              reduced serial wait from 1s to 0.2s, removed scheduler code from temp log function
-20160712 v18; prepared for first push to git
-'''
-
-__title__ = 'pytalk'
-__version__ = '18'
+__title__ = 'ammcon'
+__version__ = '0.0.1'
 
 import sys
 import logging
@@ -46,7 +39,7 @@ from email.mime.multipart import MIMEMultipart
 from imgurpython import ImgurClient
 import configparser
 
-import h_bytecmds
+import h_bytecmds as PCMD
     
 def imgur_upload(imgur_client, image_path):
     '''Upload image to Imgur and return link.'''
@@ -296,41 +289,6 @@ def graph(hours, graph_type='smooth', smoothing=5):
         msg = msg + ' hours uploaded: '
     return msg + str(image_link)
     
-def send_mail(ImgFileName, sendTo):
-    '''Email user requested generated graphs. 
-       Update later to use OAUTH2 or something. Probably broken as-is.
-       
-    Args:
-        ImgFileName -- filename to send
-        sendTo -- user to send email to
-    Returns:
-       Message to send back to Hangouts user
-    '''
-    
-    with open(ImgFileName, 'rb') as f:
-        img_data = f.read()
-    msg = MIMEMultipart()
-    msg['Subject'] = 'AmmCon Temp History'
-    msg['From']    = ammcon_email
-    if sendTo == amm_name:
-        msg['To'] = amm_email
-    elif sendTo == wyn_name:
-        msg['To'] = wyn_email
-
-    text = MIMEText("See attached graph")
-    msg.attach(text)
-    image = MIMEImage(img_data, name=os.path.basename(ImgFileName))
-    msg.attach(image)
-
-    s = smtplib.SMTP('smtp.gmail.com', 587)
-    s.ehlo()
-    s.starttls()
-    s.ehlo()
-    s.login(ammcon_email, password)
-    s.send_mail(ammcon_email, msg['To'], msg.as_string())
-    print('Email sent!')
-    s.quit()
-    
 def is_number(s):
     try:
         float(s)
@@ -360,7 +318,7 @@ def is_valid_temp(s):
         
     return False
   
-def send_RS232_command(command):
+def send_RS232_command(ser, command):
     '''Send command to microcontroller via RS232'''
     ser.write(command)
     time.sleep(0.2) # Give 200ms for microcontroller to react and respond
@@ -382,28 +340,7 @@ class temp_logger(Thread):
             log_temp()
             # Sleep 60 seconds in order to get 1 minute intervals between temp logs
             time.sleep(60)
-    
-def read_config():
-    '''Get AmmCon config values from ini file and return as dict. Unused atm'''
-    
-    config = configparser.ConfigParser()
-    config.read(cwd + '/ammcon_config.ini')
-    config_dict = {}
-    # Get AmmCon user information
-    config_dict[amm_hangoutsID] = config.get('Amm', 'HangoutsID')
-    config_dict[amm_name] = config.get('Amm', 'Name')
-    config_dict[amm_email] = config.get('Amm', 'Email')
-    config_dict[wyn_hangoutsID] = config.get('Wyn', 'HangoutsID')
-    config_dict[wyn_name] = config.get('Wyn', 'Name')
-    config_dict[wyn_email] = config.get('Wyn', 'Email')
-    # Get AmmCon general settings
-    config_dict[ammcon_email] = config.get('General', 'Email')
-    config_dict[refresh_token_filename] = config.get('General', 'RefreshTokenFileName')
-    config_dict[oauth2_client_ID] = config.get('General', 'OAuth2_Client_ID')
-    config_dict[oauth2_client_secret] = config.get('General', 'OAuth2_Client_Secret')
-    
-    return config_dict
-    
+       
 def current_time():
     '''Return datetime object of current time in the format YYYY-MM-DD HH:MM.'''
     now = datetime.datetime.now()
@@ -432,9 +369,6 @@ def log_temp():
     
 def log_command(command):
     '''Logs every valid command sent to server (except for trigger and temp commands). Replace with logging module'''
-    if command not in [PCMD_temp]:
-        with open(cwd + '/cmd_log.txt', 'a') as f:
-            f.write('{0},{1}\n'.format(current_time(), command))
     command_log.info('{0},{1}\n'.format(current_time(), command))
             
 def is_valid_AC_mode(s):
@@ -513,114 +447,75 @@ def avr_serial(command):
     '''
 
     # !!!Need to get rid of global variables in a later edit!!!
-    global sched
-    global sched_hour
-    global sched_minute
-    global AC_TEMP
-    global AC_MODE
-    global AC_FAN
-    global AC_SPEC
-    global AC_POWER
     global graph_type
     global smoothing
+    global ser # Temporary workaround until rewrite code properly
    
     command = command.lower() # When typing commands on phone, first letter tends to get capitalised
     
     # Probably a way better way to do this, just need to get around to it one day
-    
-    if command == 'ac':
-        msg = 'Last received: \n' + send_RS232_command(PCMD_ACcheck) + '\nServer:\nMode:' + AC_MODE + ', ' + AC_TEMP + ', ' + AC_FAN + ', ' + AC_SPEC
-    elif command[:8] == 'ac temp ':
-        if is_valid_AC_temp(int(command[8:])):
-            AC_TEMP = command[8:]
-            msg = 'Temp: ' + AC_TEMP
-    elif command[:8] == 'ac mode ':
-        if is_valid_AC_mode(command[8:]):
-            AC_MODE = command[8:]   
-            msg = 'Mode: ' + AC_MODE
-    elif command[:7] == 'ac fan ':
-        if is_valid_AC_fan(command[7:]):
-            AC_FAN = command[7:]
-            msg = 'Fan: ' + AC_FAN
-    elif command == 'ac powerful':
-        AC_SPEC = 'powerful'
-        msg = AC_SPEC
-    elif command == 'ac sleep':
-        AC_SPEC = 'sleep'
-        msg = AC_SPEC
-    elif command == 'ac spec off':
-        AC_SPEC = 'off'
-        msg = AC_SPEC
-    elif command == 'ac off':
-        AC_POWER = 0
-        msg = send_RS232_command(PCMD_ACoff)
-    elif command == 'ac on':
-        AC_POWER = 1
-        msg = send_RS232_command(build_AC_command())
-    elif command == 'sleep':
-        msg = send_RS232_command(PCMD_ACsleep)
-    elif command == 'living off':
-        msg = send_RS232_command(PCMD_living_lights_new_off)
+    if command == 'living off':
+        msg = send_RS232_command(ser, PCMD.living_lights_new_off)
         if msg:
             print(msg)
     elif command == 'living on':
-        msg = send_RS232_command(PCMD_living_lights_new_on)
+        msg = send_RS232_command(ser, PCMD.living_lights_new_on)
         if msg:
             print(msg)
     elif command == 'living night':
-        msg = send_RS232_command(PCMD_living_lights_night)
+        msg = send_RS232_command(ser, PCMD.living_lights_night)
         if msg:
             print(msg)
     elif command == 'living mix':
-        msg = send_RS232_command(PCMD_living_lights_chuukan)
+        msg = send_RS232_command(ser, PCMD.living_lights_chuukan)
         if msg:
             print(msg)
     elif command == 'living low':
-        msg = send_RS232_command(PCMD_living_lights_low)
+        msg = send_RS232_command(ser, PCMD.living_lights_low)
         if msg:
             print(msg)
     elif command == 'living yellow':
-        msg = send_RS232_command(PCMD_living_lights_yellow)
+        msg = send_RS232_command(ser, PCMD.living_lights_yellow)
         if msg:
             print(msg)
     elif command == 'living blue':
-        msg = send_RS232_command(PCMD_living_lights_blue)
+        msg = send_RS232_command(ser, PCMD.living_lights_blue)
         if msg:
             print(msg)           
     elif command == 'bedroom on':
-        msg = send_RS232_command(PCMD_bedroom_lights_on)
+        msg = send_RS232_command(ser, PCMD.bedroom_lights_on)
         if msg:
             print(msg)
     elif command == 'bedroom on full':
-        msg = send_RS232_command(PCMD_bedroom_lights_full)
+        msg = send_RS232_command(ser, PCMD.bedroom_lights_full)
         if msg:
             print(msg)
     elif command == 'bedroom off':
-        msg = send_RS232_command(PCMD_bedroom_lights_off)
+        msg = send_RS232_command(ser, PCMD.bedroom_lights_off)
         if msg:
             print(msg)
     elif command == 'tv off':
-        msg = send_RS232_command(PCMD_tv_pwr)
+        msg = send_RS232_command(ser, PCMD.tv_pwr)
         if msg:
             print(msg)
     elif command == 'tv on':
-        msg = send_RS232_command(PCMD_tv_pwr)
+        msg = send_RS232_command(ser, PCMD.tv_pwr)
         if msg:
             print(msg)
     elif command == 'tv mute':
-        msg = send_RS232_command(PCMD_tv_mute)
+        msg = send_RS232_command(ser, PCMD.tv_mute)
         if msg:
             print(msg)
     elif command == 'tv switch':
-        msg = send_RS232_command(PCMD_tv_switch)
+        msg = send_RS232_command(ser, PCMD.tv_switch)
         if msg:
             print(msg)
     elif command == 'temp':
-        msg = send_RS232_command(PCMD_temp)
+        msg = send_RS232_command(ser, PCMD.temp)
         if msg:
             msg = msg.strip('\r\n')
     elif command == 'templog':
-        msg = send_RS232_command(PCMD_temp)
+        msg = send_RS232_command(ser, PCMD.temp)
         if msg:
             msg = msg[8:]
     elif command == 'bus himeji':
@@ -639,17 +534,6 @@ def avr_serial(command):
             msg = graph(int(float(command[5:])), graph_type, smoothing)
         else:
             msg = 'Incorrect usage. Accepted range: graph1 to graph24'
-    elif 'sched' in command:
-        if command == 'sched on':
-                sched = 1
-                msg = 'Scheduler on. Set to ' + str(sched_hour).zfill(2) + ':' + str(sched_minute).zfill(2)
-        elif command == 'sched off':
-            sched = 0
-            msg = 'Scheduler off'
-        elif 'sched hour' in command:
-            sched_hour = int(command[11:])
-        elif 'sched minute' in command:
-            sched_minute = int(command[13:])            
     elif 'help' in command:
         msg = ( 'AmmCon commands:\n\n acxx [Set aircon temp. to xx]\n '
                                      'ac mode auto/heat/dry/cool [Set aircon mode]\n'
@@ -679,6 +563,22 @@ def avr_serial(command):
     
     return str(msg)
     
+def connect_serial():
+    # Attempt serial connection to Ammcon microcontroller. 
+    # When using FTDI USB adapter on Linux then '/dev/ttyUSB0'
+    # otherwise '/dev/ttyAMA0' if using rPi GPIO RX/TX
+    # or 'COM1' etc on Windows.
+    # !!!clean up this code later!!!
+    try:
+        ser = serial.Serial('/dev/ttyUSB0', 57600, timeout=1)
+        print('Connected to serial successfully')
+    except serial.SerialException:
+        print('No device detected or could not connect - attempting reconnect in 10 seconds')
+        time.sleep(10)
+        ser = serial.Serial('/dev/ttyUSB0', 57600, timeout=1)
+    
+    return ser
+    
 def command_parser(hangouts_user, command):
     '''Parse commands received via Hangouts and thwart Itiot
 
@@ -696,7 +596,7 @@ def command_parser(hangouts_user, command):
     
     response = None
     
-    if  amm_hangoutsID in str(hangouts_user):
+    if amm_hangoutsID in str(hangouts_user):
         info = avr_serial(command)
         print('message received, sent to controller')
         if info:
@@ -794,7 +694,74 @@ class _HangoutsClient(sleekxmpp.ClientXMPP):
         if msg['type'] in ('chat', 'normal'):
             reply = command_parser(msg['from'], msg['body'])
             msg.reply(reply).send()
+
             
+def google_authenticate(oauth2_client_ID, oauth2_client_secret):
+    # Start OAuth2 authorisation in order to get access token for logging into Hangouts
+    # If no refresh token exists then get new access + refresh token.
+
+    # Start by getting authorization_code for Hangouts scope. Email info scope used to get email address for login
+    # OAUTH2 client ID and secret are obtained through Google Apps Developers Console for the account I use for Ammcon
+    OAUTH2_SCOPE         = 'https://www.googleapis.com/auth/googletalk https://www.googleapis.com/auth/userinfo.email'
+    OAUTH2_LOGIN_URL     = 'https://accounts.google.com/o/oauth2/v2/auth?{}'.format(
+        urlencode(dict(
+            client_id     = oauth2_client_ID,
+            scope         = OAUTH2_SCOPE,
+            redirect_uri  = 'urn:ietf:wg:oauth:2.0:oob',
+            response_type = 'code',
+            access_type   = 'offline',
+        ))
+    )
+    
+    # Print auth URL and wait for authentication code from user.
+    print(OAUTH2_LOGIN_URL) 
+    auth_code = input("Enter auth code from the above link: ")
+
+    # Make an access token request using the newly acquired authorisation code
+    token_request_data = {
+        'client_id':     oauth2_client_ID,
+        'client_secret': oauth2_client_secret,
+        'code':          auth_code,
+        'grant_type':    'authorization_code',
+        'redirect_uri':  'urn:ietf:wg:oauth:2.0:oob',
+        'access_type':   'offline',
+    }
+    OAUTH2_TOKEN_REQUEST_URL = 'https://www.googleapis.com/oauth2/v4/token'
+    r = requests.post(OAUTH2_TOKEN_REQUEST_URL, data=token_request_data)
+    res = r.json()            
+    access_token = res['access_token']
+    refresh_token = res['refresh_token']
+    
+    # Save refresh token so we don't have to go through this everytime we want to login
+    with open(cwd + refresh_token_filename, 'w') as file:
+        file.write(refresh_token)
+
+    return access_token, email
+    
+def google_refresh(oauth2_client_ID, oauth2_client_secret, refresh_token_filename):
+    # Make an access token request using existing refresh token
+    with open(cwd + refresh_token_filename, 'r') as file:
+        refresh_token = file.read()
+   
+    token_request_data = {
+        'client_id':     oauth2_client_ID,
+        'client_secret': oauth2_client_secret,
+        'refresh_token': refresh_token,
+        'grant_type':    'refresh_token',
+    }
+    OAUTH2_TOKEN_REQUEST_URL = 'https://www.googleapis.com/oauth2/v4/token'
+    r = requests.post(OAUTH2_TOKEN_REQUEST_URL, data=token_request_data)
+    res = r.json()
+    access_token = res['access_token']
+    
+    # Get email address for Hangouts login
+    authorization_header = {"Authorization": "OAuth %s" % access_token}
+    usr_req = requests.get("https://www.googleapis.com/oauth2/v2/userinfo", headers=authorization_header)
+    usr_req_res = usr_req.json()
+    email = usr_req_res['email']
+
+    return access_token, email
+        
 def main():
     # Get absolute path of the dir script is run from
     cwd = sys.path[0]
@@ -813,7 +780,7 @@ def main():
     
     # Get AmmCon general settings
     ammcon_email = config.get('General', 'Email')
-    refresh_token_filename = config.get('General', 'RefreshTokenFileName')
+    refresh_token_filename = config.get('General', 'RefreshTokenFileName') # To do: move refresh token to inside config file, get rid of separate file
     oauth2_client_ID = config.get('General', 'OAuth2_Client_ID')
     oauth2_client_secret = config.get('General', 'OAuth2_Client_Secret')
     
@@ -824,119 +791,36 @@ def main():
                         filename=cwd + '/ammcon.log',
                         filemode='a')
                         
-    command_log = logging.getLogger('Ammcon.Command')
+    command_log = logging.getLogger('Ammcon.CommandLog')
     temp_log = logging.getLogger('Ammcon.TempLog')
     xmpp_log = logging.getLogger('Ammcon.XMPP')
-    logging.getLogger("requests").setLevel(logging.WARNING) # Lower log level for requests module so that OAUTH2 details etc aren't logged
+    logging.getLogger('requests').setLevel(logging.WARNING) # Lower log level for requests module so that OAUTH2 details etc aren't logged
 
-    # Attempt serial connection to Ammcon microcontroller. 
-    # When using FTDI USB adapter on Linux then '/dev/ttyUSB0'
-    # otherwise '/dev/ttyAMA0' if using rPi GPIO RX/TX
-    # or 'COM1' etc on Windows.
-    try:
-        ser = serial.Serial('/dev/ttyUSB0', 57600, timeout=1)
-        print('Connected to serial successfully')
-    except serial.SerialException:
-        print('No device detected or could not connect - attempting reconnect in 10 seconds')
-        time.sleep(10)
-        ser = serial.Serial('/dev/ttyUSB0', 57600, timeout=1)
+    global ser # Temporary workaround until can rewrite code
+    ser = connect_serial()
     
     # !!!Need to get rid of these global variables in a later edit!!!
     global graph_type
     graph_type = 'smooth'
     global smoothing
     smoothing = 5
-    
-    global sched
-    sched = 1
-    global sched_hour
-    sched_hour = 6
-    global sched_minute
-    sched_minute = 0
-    
-    global AC_TEMP 
-    AC_TEMP = '27'
-    global AC_MODE
-    AC_MODE = 'auto'
-    global AC_FAN
-    AC_FAN = 'auto'
-    global AC_SPEC
-    AC_SPEC = 'off'
-    global AC_POWER
-    AC_POWER = 0
-    
+       
     # Start temp logger thread
     # Need to look into using Queue
     # Need to get rid of global var
     MAX_TEMP_CHANGE = 2.0 # Max realistic temp change allowed in logging interval (default is 1min). (temp sensor is ±0.5degC)
     global prev_temp
-    prev_temp = 0
     prev_temp = avr_serial('templog')
     temp_logger_thread = temp_logger()
     temp_logger_thread.daemon = True
     temp_logger_thread.start()
     
-    # Start OAuth2 authorisation in order to login to Hangouts
-    OAUTH2_CLIENT_ID     = oauth2_client_ID
-    OAUTH2_CLIENT_SECRET = oauth2_client_secret
-    OAUTH2_TOKEN_REQUEST_URL = 'https://www.googleapis.com/oauth2/v4/token'
-    # If no refresh token exists then get new access + refresh token.
+    # Authenticate with Google
     if (not os.path.isfile(cwd + refresh_token_filename)):
-        # Start by getting authorization_code for Hangouts scope. Email info scope used to get email address for login
-        # OAUTH2 client ID and secret are obtained through Google Apps Developers Console for the account I use for Ammcon
-        OAUTH2_SCOPE         = 'https://www.googleapis.com/auth/googletalk https://www.googleapis.com/auth/userinfo.email'
-        OAUTH2_LOGIN_URL     = 'https://accounts.google.com/o/oauth2/v2/auth?{}'.format(
-            urlencode(dict(
-                client_id     = OAUTH2_CLIENT_ID,
-                scope         = OAUTH2_SCOPE,
-                redirect_uri  = 'urn:ietf:wg:oauth:2.0:oob',
-                response_type = 'code',
-                access_type   = 'offline',
-            ))
-        )
-        
-        # Print auth URL and wait for authentication code from user.
-        print(OAUTH2_LOGIN_URL)      
-        auth_code = input("Enter auth code from the above link: ")
-
-        # Make an access token request using newly acquired access token
-        token_request_data = {
-            'client_id':     OAUTH2_CLIENT_ID,
-            'client_secret': OAUTH2_CLIENT_SECRET,
-            'code':          auth_code,
-            'grant_type':    'authorization_code',
-            'redirect_uri':  'urn:ietf:wg:oauth:2.0:oob',
-            'access_type':   'offline',
-        }
-        r = requests.post(OAUTH2_TOKEN_REQUEST_URL, data=token_request_data)
-        res = r.json()            
-        access_token = res['access_token']
-        refresh_token = res['refresh_token']
-        
-        # Save refresh token to make future logins automatic
-        with open(cwd + refresh_token_filename, 'w') as file:
-            file.write(refresh_token)
+        access_token, email = google_authenticate(oauth2_client_ID, oauth2_client_secret)
     else:
-        with open(cwd + refresh_token_filename, 'r') as file:
-            refresh_token = file.read()
-        
-        # Make an access token request using existing refresh token
-        token_request_data = {
-            'client_id':     OAUTH2_CLIENT_ID,
-            'client_secret': OAUTH2_CLIENT_SECRET,
-            'refresh_token': refresh_token,
-            'grant_type':    'refresh_token',
-        }
-        r = requests.post(OAUTH2_TOKEN_REQUEST_URL, data=token_request_data)
-        res = r.json()
-        access_token = res['access_token']
-    
-    # Get email address for Hangouts login (can also use for sending emails)
-    authorization_header = {"Authorization": "OAuth %s" % access_token}
-    usr_req = requests.get("https://www.googleapis.com/oauth2/v2/userinfo", headers=authorization_header)
-    usr_req_res = usr_req.json()
-    username = usr_req_res['email']
-        
+        access_token, email = google_refresh(oauth2_client_ID, oauth2_client_secret)
+
     # Setup Hangouts client and register XMPP plugins (order in which they are registered does not matter.)
     # Not using real password for password arg as using OAUTH2 to login (arbitrarily set to 'yarp'.)
     xmpp = _HangoutsClient(username, 'yarp')
