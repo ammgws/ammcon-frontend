@@ -1,3 +1,3 @@
 # ammcon
 
-Ammcon server script
+Ammcon server script for my personal use
