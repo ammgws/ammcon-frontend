@@ -730,18 +730,10 @@ def google_authenticate(oauth2_client_ID, oauth2_client_secret):
     res = r.json()            
     access_token = res['access_token']
     refresh_token = res['refresh_token']
+    return access_token, refresh_token
     
-    # Save refresh token so we don't have to go through this everytime we want to login
-    with open(cwd + refresh_token_filename, 'w') as file:
-        file.write(refresh_token)
-
-    return access_token
-    
-def google_refresh(oauth2_client_ID, oauth2_client_secret, refresh_token_filename):
+def google_refresh(oauth2_client_ID, oauth2_client_secret, refresh_token):
     # Make an access token request using existing refresh token
-    with open(cwd + refresh_token_filename, 'r') as file:
-        refresh_token = file.read()
-   
     token_request_data = {
         'client_id':     oauth2_client_ID,
         'client_secret': oauth2_client_secret,
@@ -752,7 +744,6 @@ def google_refresh(oauth2_client_ID, oauth2_client_secret, refresh_token_filenam
     r = requests.post(OAUTH2_TOKEN_REQUEST_URL, data=token_request_data)
     res = r.json()
     access_token = res['access_token']
-    
     return access_token
 
 def google_getemail(access_token):
@@ -781,7 +772,7 @@ def main():
     
     # Get AmmCon general settings
     ammcon_email = config.get('General', 'Email')
-    refresh_token_filename = config.get('General', 'RefreshTokenFileName') # To do: move refresh token to inside config file, get rid of separate file
+    refresh_token = config.get('General', 'RefreshToken')
     oauth2_client_ID = config.get('General', 'OAuth2_Client_ID')
     oauth2_client_secret = config.get('General', 'OAuth2_Client_Secret')
     
@@ -817,10 +808,14 @@ def main():
     temp_logger_thread.start()
     
     # Authenticate with Google and get access token for logging into Hangouts
-    if (not os.path.isfile(cwd + refresh_token_filename)):
-        access_token = google_authenticate(oauth2_client_ID, oauth2_client_secret)
+    if not refresh_token:
+        access_token, refresh_token = google_authenticate(oauth2_client_ID, oauth2_client_secret)
+        # Save refresh token so we don't have to go through auth process everytime we want to login
+        config.set('General', 'RefreshToken', refresh_token)
+        with open(cwd + '/ammcon_config.ini', 'wb') as f:
+            config.write(f)
     else:
-        access_token = google_refresh(oauth2_client_ID, oauth2_client_secret)
+        access_token = google_refresh(oauth2_client_ID, oauth2_client_secret, refresh_token)
     username = google_getemail(access_token)
 
     # Setup Hangouts client and register XMPP plugins (order in which they are registered does not matter.)
