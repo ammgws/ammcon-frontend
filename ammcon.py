@@ -350,7 +350,7 @@ class temp_logger(Thread):
         temp = send_RS232_command(PCMD.micro_commands['temp'])
         #if not is_valid_temp(temp):
         if not temp:
-            temp = avr_serial(mode)
+            temp = send_RS232_command(PCMD.micro_commands['temp'])
             #if not is_valid_temp(temp):
             if not temp:
                 return -1 # Flag as invalid temperature
