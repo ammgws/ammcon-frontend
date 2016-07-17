@@ -30,6 +30,7 @@ import datetime
 import serial
 
 from threading import Thread
+from queue import queue
 
 import smtplib
 from email.mime.text import MIMEText
@@ -40,6 +41,9 @@ from imgurpython import ImgurClient
 import configparser
 
 import h_bytecmds as PCMD
+
+# Get absolute path of the dir script is run from
+cwd = sys.path[0]
     
 def imgur_upload(imgur_client, image_path):
     '''Upload image to Imgur and return link.'''
@@ -325,7 +329,7 @@ def send_RS232_command(ser, command):
     msg = ser.readline()
     while ser.inWaiting() > 0:
             msg += ser.readline()
-    log_command(command)
+    command_log.info('{0},{1}\n'.format(current_time(), command))
     # Convert byte array to ascii string, strip newline chars
     return str(msg, 'ascii').rstrip('\r\n')
 
@@ -337,40 +341,36 @@ class temp_logger(Thread):
 
     def run(self):
         while not self.stopped:
-            log_temp()
+            self.log_temp()
             # Sleep 60 seconds in order to get 1 minute intervals between temp logs
             time.sleep(60)
+    
+    def read_temp(self):
+        '''Get temperature from microcontroller. Try one more time if valid temperature not received.'''
+        temp = send_RS232_command(PCMD.micro_commands['temp'])
+        #if not is_valid_temp(temp):
+        if not temp:
+            temp = avr_serial(mode)
+            #if not is_valid_temp(temp):
+            if not temp:
+                return -1 # Flag as invalid temperature
+        return temp
+    
+    def log_temp(self):
+        '''Log temperature and current time to file. Need to look into using Queue'''
+        temp = self.read_temp()
+        if (temp != -1):
+            with open(cwd + '/temp_log.txt', 'a') as f:
+                f.write('{0}, {1}\n'.format(current_time(), str(temp).strip('\r\n')))
+            sys.stdout.flush()
+        else:
+            temp_log.debug("Unable to get valid temperature from microcontroller. Value received: {0}".format(str(temp))) 
        
 def current_time():
     '''Return datetime object of current time in the format YYYY-MM-DD HH:MM.'''
     now = datetime.datetime.now()
     return str(now.strftime("%Y-%m-%d %H:%M"))
     
-def read_temp(mode):
-    '''Get temperature from microcontroller. Try one more time if valid temperature not received.'''
-    temp = avr_serial(mode)
-    #if not is_valid_temp(temp):
-    if not temp:
-        temp = avr_serial(mode)
-        #if not is_valid_temp(temp):
-        if not temp:
-            return -1 # Flag as invalid temperature
-    return temp
-    
-def log_temp():
-    '''Log temperature and current time to file. Need to look into using Queue'''
-    temp = read_temp('templog')
-    if (temp != -1):
-        with open(cwd + '/temp_log.txt', 'a') as f:
-            f.write('{0}, {1}\n'.format(current_time(), str(temp).strip('\r\n')))
-        sys.stdout.flush()
-    else:
-        temp_log.debug("Unable to get valid temperature from microcontroller. Value received: {0}".format(str(temp)))  
-    
-def log_command(command):
-    '''Logs every valid command sent to server (except for trigger and temp commands). Replace with logging module'''
-    command_log.info('{0},{1}\n'.format(current_time(), command))
-            
 def is_valid_AC_mode(s):
     '''Determine if received AC mode command is valid.'''
     if s in ['auto', 'heat', 'dry', 'cool']:
@@ -437,208 +437,73 @@ def build_AC_command():
     cmd = '\xCE\xAC\x01' + chr(int(AC_TEMP)-17) + mode + fan + spec + '\x7F'
     return cmd
 
-def avr_serial(command):
-    '''Send command to microcontroller, and return any message received.
-    
-    Args:
-        command -- Command to send to microcontroller
-    Returns:
-        Response from microcontroller
+class _AmmConSever(sleekxmpp.ClientXMPP):
+    '''
+    Create AmmCon server to handle connection to serial port
+    and Hangouts server
     '''
 
-    # !!!Need to get rid of global variables in a later edit!!!
-    global graph_type
-    global smoothing
-    global ser # Temporary workaround until rewrite code properly
-   
-    command = command.lower() # When typing commands on phone, first letter tends to get capitalised
-    
-    # Probably a way better way to do this, just need to get around to it one day
-    if command == 'living off':
-        msg = send_RS232_command(ser, PCMD.living_lights_new_off)
-        if msg:
-            print(msg)
-    elif command == 'living on':
-        msg = send_RS232_command(ser, PCMD.living_lights_new_on)
-        if msg:
-            print(msg)
-    elif command == 'living night':
-        msg = send_RS232_command(ser, PCMD.living_lights_night)
-        if msg:
-            print(msg)
-    elif command == 'living mix':
-        msg = send_RS232_command(ser, PCMD.living_lights_chuukan)
-        if msg:
-            print(msg)
-    elif command == 'living low':
-        msg = send_RS232_command(ser, PCMD.living_lights_low)
-        if msg:
-            print(msg)
-    elif command == 'living yellow':
-        msg = send_RS232_command(ser, PCMD.living_lights_yellow)
-        if msg:
-            print(msg)
-    elif command == 'living blue':
-        msg = send_RS232_command(ser, PCMD.living_lights_blue)
-        if msg:
-            print(msg)           
-    elif command == 'bedroom on':
-        msg = send_RS232_command(ser, PCMD.bedroom_lights_on)
-        if msg:
-            print(msg)
-    elif command == 'bedroom on full':
-        msg = send_RS232_command(ser, PCMD.bedroom_lights_full)
-        if msg:
-            print(msg)
-    elif command == 'bedroom off':
-        msg = send_RS232_command(ser, PCMD.bedroom_lights_off)
-        if msg:
-            print(msg)
-    elif command == 'tv off':
-        msg = send_RS232_command(ser, PCMD.tv_pwr)
-        if msg:
-            print(msg)
-    elif command == 'tv on':
-        msg = send_RS232_command(ser, PCMD.tv_pwr)
-        if msg:
-            print(msg)
-    elif command == 'tv mute':
-        msg = send_RS232_command(ser, PCMD.tv_mute)
-        if msg:
-            print(msg)
-    elif command == 'tv switch':
-        msg = send_RS232_command(ser, PCMD.tv_switch)
-        if msg:
-            print(msg)
-    elif command == 'temp':
-        msg = send_RS232_command(ser, PCMD.temp)
-        if msg:
-            msg = msg.strip('\r\n')
-    elif command == 'templog':
-        msg = send_RS232_command(ser, PCMD.temp)
-        if msg:
-            msg = msg[8:]
-    elif command == 'bus himeji':
-        msg = check_bus('himeji', datetime.datetime.now())
-    elif command == 'bus home':
-        msg = check_bus('home', datetime.datetime.now())
-    elif command == 'graph=actual':
-        graph_type = 'actual'
-    elif command == 'graph=smooth':
-        graph_type = 'smooth'
-    elif command[:9] == 'smoothing':
-        if is_number(int(float(command[9:]))) and int(float(command[9:])) > 0 and int(float(command[9:])) < 10 :
-            smoothing = int(float(command[9:]))
-    elif command[:5] == 'graph':
-        if is_number(int(float(command[5:]))) and int(float(command[5:])) > 0 and int(float(command[5:])) < 25 :
-            msg = graph(int(float(command[5:])), graph_type, smoothing)
+    def __init__(self):
+        # Get absolute path of the dir script is run from
+        self.cwd = sys.path[0]
+        
+        # Setup loggers
+        self.command_log = logging.getLogger('Ammcon.CommandLog')
+        self.temp_log = logging.getLogger('Ammcon.TempLog')
+        # Lower log level for requests module so that OAUTH2 details etc aren't logged
+        logging.getLogger('requests').setLevel(logging.WARNING)
+        
+        # First setup serial connection to Ammcon microcontroller.
+        # When using FTDI USB adapter on Linux then '/dev/ttyUSB0'
+        # otherwise '/dev/ttyAMA0' if using rPi GPIO RX/TX
+        # or 'COM1' etc on Windows.
+        try:
+            self.ser = serial.Serial('/dev/ttyUSB0', 57600, timeout=1)
+        except self.serial.SerialException:
+            print('No device detected or could not connect - attempting reconnect in 10 seconds')
+            time.sleep(10)
+            self.ser = serial.Serial('/dev/ttyUSB0', 57600, timeout=1)
+
+        # Read in Ammcon config values
+        self.config = configparser.ConfigParser()
+        self.config.read(self.cwd + '/ammcon_config.ini')
+        # Get AmmCon user information
+        self.amm_hangoutsID = self.config.get('Amm', 'HangoutsID')
+        self.amm_name = self.config.get('Amm', 'Name')
+        self.amm_email = self.config.get('Amm', 'Email')
+        self.wyn_hangoutsID = self.config.get('Wyn', 'HangoutsID')
+        self.wyn_name = self.config.get('Wyn', 'Name')
+        self.wyn_email = self.config.get('Wyn', 'Email')
+        # Get Hangouts login details
+        self.refresh_token = self.config.get('General', 'RefreshToken')
+        self.oauth2_client_ID = self.config.get('General', 'OAuth2_Client_ID')
+        self.oauth2_client_secret = self.config.get('General', 'OAuth2_Client_Secret')
+        
+        # Authenticate with Google and get access token for logging into Hangouts
+        if not self.refresh_token:
+            self.access_token, self.refresh_token = google_authenticate(self.oauth2_client_ID, self.oauth2_client_secret)
+            # Save refresh token so we don't have to go through auth process everytime we want to login
+            self.config.set('General', 'RefreshToken', self.refresh_token)
+            with open(cwd + '/ammcon_config.ini', 'wb') as f:
+                self.config.write(f)
         else:
-            msg = 'Incorrect usage. Accepted range: graph1 to graph24'
-    elif 'help' in command:
-        msg = ( 'AmmCon commands:\n\n acxx [Set aircon temp. to xx]\n '
-                                     'ac mode auto/heat/dry/cool [Set aircon mode]\n'
-                                     'ac fan auto/quiet/1/2/3 [Set aircon fan setting]\n'
-                                     'ac powerful [Set aircon to powerful setting]\n'
-                                     'ac sleep [Enables aircon sleep timer]\n'
-                                     'ac on/off [Turn on/off aircon]\n' 
-                                     'tv on/off/mute [Turn on/off or mute TV]\n'
-                                     'bedroom on/off [Turn on/off bedroom lights]\n'
-                                     'bedroom on full [Turn on bedroom lights to brightest setting]\n'
-                                     'living on/off [Turn on/off both living room lights]\n'
-                                     'living night [Set living room lights to night-light mode]\n'
-                                     'living blue/mix/yellow [Set colour temperature of living room lights]\n'
-                                     'open/close [Open/close curtains]\n'
-                                     'temp [Get current room temp.]\n'
-                                     'sched on [Activate scheduler for aircon]\n'
-                                     'sched hour xx [Set scheduler hour]\n'
-                                     'sched minute xx [Set scheduler minute]\n'
-                                     'graphxx [Get graph of temp. over last xx hours]'
-                                     'graph=actual [Set graphing function to plot raw data]\n'
-                                     'graph=smooth [Set graphing function to plot smoothed data]\n'
-                                     'smoothingx [Set graph smoothing window to x]\n'
-                                     'bus himeji [Get times for next bus to Himeji]\n'
-                                     'bus home [Get times for next bus home]\n' )
-    else:
-        msg = "Command not recognised"
-    
-    return str(msg)
-    
-def connect_serial():
-    # Attempt serial connection to Ammcon microcontroller. 
-    # When using FTDI USB adapter on Linux then '/dev/ttyUSB0'
-    # otherwise '/dev/ttyAMA0' if using rPi GPIO RX/TX
-    # or 'COM1' etc on Windows.
-    # !!!clean up this code later!!!
-    try:
-        ser = serial.Serial('/dev/ttyUSB0', 57600, timeout=1)
-        print('Connected to serial successfully')
-    except serial.SerialException:
-        print('No device detected or could not connect - attempting reconnect in 10 seconds')
-        time.sleep(10)
-        ser = serial.Serial('/dev/ttyUSB0', 57600, timeout=1)
-    
-    return ser
-    
-def command_parser(hangouts_user, command):
-    '''Parse commands received via Hangouts and thwart Itiot
+            self.access_token = google_refresh(self.oauth2_client_ID, self.oauth2_client_secret, self.refresh_token)
+        self.ammcon_email = google_getemail(self.access_token)
 
-    Args:
-        user -- Hangouts userID to determine priveleges
-        command -- Command received from Hangouts user
-    Returns:
-        Message to send back to Hangouts user
-    '''
+        # Setup new SleekXMPP client to connect to Hangouts
+        # Not using real password for password arg as using OAUTH2 to login (arbitrarily set to 'yarp'.)
+        sleekxmpp.ClientXMPP.__init__(self, self.ammcon_email, 'yarp')
+        self.credentials['access_token'] = self.access_token
+        self.auto_reconnect = True
+        # Register XMPP plugins (order in which they are registered does not matter.)
+        self.register_plugin('xep_0030') # Service Discovery
+        self.register_plugin('xep_0004') # Data Forms
+        self.register_plugin('xep_0199') # XMPP Ping
 
-    print('----------------')
-    print('Hangouts User ID: {0}'.format(str(hangouts_user)))
-    print('Received command: {0}'.format(command))
-    print('----------------')
-    
-    response = None
-    
-    if amm_hangoutsID in str(hangouts_user):
-        info = avr_serial(command)
-        print('message received, sent to controller')
-        if info:
-            response = info
-    elif wyn_hangoutsID in str(hangouts_user):
-            if 'temp' in command:
-                info = avr_serial(command)
-                if info:
-                    response = '{0}. Quite to your liking, Sir {1}, Lord of the Itiots?'.format(info, wyn_name)
-            elif 'help' in command:
-                info = avr_serial(command)
-                if info:
-                    response = info
-            elif 'graph' in command:
-                info = avr_serial(command)
-                if info:
-                    response = info
-            elif 'bribe' in command:
-                response = 'Come meet me in person to discuss'
-            elif 'fef' in command:
-                response = 'CHIP'
-            else:
-                response = '{0} evil thwarted'.format(wyn_name)
-    else:
-            print('Unauthorised user rejected')
-            response = None
-               
-    return response
-
-class _HangoutsClient(sleekxmpp.ClientXMPP):
-    '''
-    Create SleekXMPP class to connect to Hangouts using a Google Apps
-    account with a custom domain (requires custom certificate validation.)
-    '''
-
-    def __init__(self, jid, password):
-        sleekxmpp.ClientXMPP.__init__(self, jid, password)
-
-        # The session_start event will be triggered when
-        # the bot establishes its connection with the server
+        # The session_start event will be triggered when the
+        # XMPP client establishes its connection with the server
         # and the XML streams are ready for use. We want to
-        # listen for this event so that we we can initialize
+        # listen for this event so that we can initialize
         # our roster.
         self.add_event_handler("session_start", self.start)
 
@@ -653,6 +518,18 @@ class _HangoutsClient(sleekxmpp.ClientXMPP):
         # certifcates ourselves and check that it really
         # is from Google.
         self.add_event_handler("ssl_invalid_cert", self.invalid_cert)
+        
+        # Set Ammcon default settings
+        self.graph_type = 'smooth'
+        self.smoothing = 5
+        #self.max_temp_change = 2.0 # Max realistic temp change allowed in logging interval (default is 1min). (temp sensor is ±0.5degC)
+        #self.prev_temp = avr_serial('templog')
+
+        # Setup temp logger thread
+        # Need to look into using Queue
+        temp_logger_thread = temp_logger()
+        temp_logger_thread.daemon = True
+        temp_logger_thread.start()
         
     def invalid_cert(self, pem_cert):
         der_cert = ssl.PEM_cert_to_DER_cert(pem_cert)
@@ -681,21 +558,86 @@ class _HangoutsClient(sleekxmpp.ClientXMPP):
 
     def message(self, msg):
         '''
-        Process incoming message stanzas. Be aware that this also
-        includes MUC messages and error messages. It is usually
-        a good idea to check the message type before processing
-        or sending replies.
-
+        Process incoming message stanzas, check user and send valid Ammcon commands to microcontroller.
+        
         Args:
-            msg -- The received message stanza. See the documentation
-                   for stanza objects and the Message stanza to see
-                   how it may be used.
+            msg -- The received message stanza. See the SleekXMPP docs for stanza objects 
+            and the Message stanza to see how it may be used.
+        Returns:
+            Message to send back to Hangouts user
         '''
-        if msg['type'] in ('chat', 'normal'):
-            reply = command_parser(msg['from'], msg['body'])
-            msg.reply(reply).send()
 
+        #Message stanzas may include MUC messages and error messages, hence check the message type before processing.
+        if msg['type'] in ('chat', 'normal'):
             
+            hangouts_user = str(msg['from'])
+            command = str(msg['body'])
+            print('----------------')
+            print('Hangouts User ID: {0}'.format(hangouts_user))
+            print('Received command: {0}'.format(command))
+            print('----------------')
+                        
+            if self.amm_hangoutsID in hangouts_user:
+                if command in PCMD.micro_commands:
+                    print('Command received. Sending to microcontroller...')
+                    response = send_RS232_command(ser, PCMD.micro_commands[command])
+                else:
+                    if command == 'bus himeji':
+                        msg = check_bus('himeji', datetime.datetime.now())
+                    elif command == 'bus home':
+                        msg = check_bus('home', datetime.datetime.now())
+                    elif command == 'graph=actual':
+                        graph_type = 'actual'
+                    elif command == 'graph=smooth':
+                        graph_type = 'smooth'
+                    elif command[:9] == 'smoothing':
+                        if is_number(int(float(command[9:]))) and int(float(command[9:])) > 0 and int(float(command[9:])) < 10 :
+                            smoothing = int(float(command[9:]))
+                    elif command[:5] == 'graph':
+                        if is_number(int(float(command[5:]))) and int(float(command[5:])) > 0 and int(float(command[5:])) < 25 :
+                            msg = graph(int(float(command[5:])), graph_type, smoothing)
+                        else:
+                            msg = 'Incorrect usage. Accepted range: graph1 to graph24'
+                    elif 'help' in command:
+                        msg = ( 'AmmCon commands:\n\n acxx [Set aircon temp. to xx]\n '
+                                                     'ac mode auto/heat/dry/cool [Set aircon mode]\n'
+                                                     'ac fan auto/quiet/1/2/3 [Set aircon fan setting]\n'
+                                                     'ac powerful [Set aircon to powerful setting]\n'
+                                                     'ac sleep [Enables aircon sleep timer]\n'
+                                                     'ac on/off [Turn on/off aircon]\n' 
+                                                     'tv on/off/mute [Turn on/off or mute TV]\n'
+                                                     'bedroom on/off [Turn on/off bedroom lights]\n'
+                                                     'bedroom on full [Turn on bedroom lights to brightest setting]\n'
+                                                     'living on/off [Turn on/off both living room lights]\n'
+                                                     'living night [Set living room lights to night-light mode]\n'
+                                                     'living blue/mix/yellow [Set colour temperature of living room lights]\n'
+                                                     'open/close [Open/close curtains]\n'
+                                                     'temp [Get current room temp.]\n'
+                                                     'sched on [Activate scheduler for aircon]\n'
+                                                     'sched hour xx [Set scheduler hour]\n'
+                                                     'sched minute xx [Set scheduler minute]\n'
+                                                     'graphxx [Get graph of temp. over last xx hours]'
+                                                     'graph=actual [Set graphing function to plot raw data]\n'
+                                                     'graph=smooth [Set graphing function to plot smoothed data]\n'
+                                                     'smoothingx [Set graph smoothing window to x]\n'
+                                                     'bus himeji [Get times for next bus to Himeji]\n'
+                                                     'bus home [Get times for next bus home]\n' )
+            elif self.wyn_hangoutsID in hangouts_user:
+                    if command == 'temp':
+                        info = send_RS232_command(ser, PCMD.micro_commands[command])
+                        response = '{0}. Quite to your liking, Sir {1}, Lord of the Itiots?'.format(info, wyn_name)
+                    elif 'bribe' in command:
+                        response = 'Come meet me in person to discuss'
+                    elif 'fef' in command:
+                        response = 'CHIP'
+                    else:
+                        response = '{0} evil thwarted'.format(self.wyn_name)
+            else:
+                    print('Unauthorised user rejected')
+                    response = 'Rejected'
+            
+            msg.reply(response).send()
+
 def google_authenticate(oauth2_client_ID, oauth2_client_secret):
     # Start authorisation flow to get new access + refresh token.
 
@@ -757,79 +699,18 @@ def google_getemail(access_token):
 def main():
     # Get absolute path of the dir script is run from
     cwd = sys.path[0]
-	
-    # Read in config values (possible move to it's own function later?)
-    config = configparser.ConfigParser()
-    config.read(cwd + '/ammcon_config.ini')
-
-    # Get AmmCon user information
-    amm_hangoutsID = config.get('Amm', 'HangoutsID')
-    amm_name = config.get('Amm', 'Name')
-    amm_email = config.get('Amm', 'Email')
-    wyn_hangoutsID = config.get('Wyn', 'HangoutsID')
-    wyn_name = config.get('Wyn', 'Name')
-    wyn_email = config.get('Wyn', 'Email')
-    
-    # Get AmmCon general settings
-    ammcon_email = config.get('General', 'Email')
-    refresh_token = config.get('General', 'RefreshToken')
-    oauth2_client_ID = config.get('General', 'OAuth2_Client_ID')
-    oauth2_client_secret = config.get('General', 'OAuth2_Client_Secret')
-    
     # Set up logging to file. Level 5 = verbose to catch everything. Set level to logging.DEBUG for debug, logging.ERROR for errors only.
     logging.basicConfig(level=5,
                         format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                         datefmt='%Y-%m-%d %H:%M"',
                         filename=cwd + '/ammcon.log',
                         filemode='a')
-                        
-    command_log = logging.getLogger('Ammcon.CommandLog')
-    temp_log = logging.getLogger('Ammcon.TempLog')
-    xmpp_log = logging.getLogger('Ammcon.XMPP')
-    logging.getLogger('requests').setLevel(logging.WARNING) # Lower log level for requests module so that OAUTH2 details etc aren't logged
 
-    global ser # Temporary workaround until can rewrite code
-    ser = connect_serial()
-    
-    # !!!Need to get rid of these global variables in a later edit!!!
-    global graph_type
-    graph_type = 'smooth'
-    global smoothing
-    smoothing = 5
-       
-    # Start temp logger thread
-    # Need to look into using Queue
-    # Need to get rid of global var
-    MAX_TEMP_CHANGE = 2.0 # Max realistic temp change allowed in logging interval (default is 1min). (temp sensor is ±0.5degC)
-    global prev_temp
-    prev_temp = avr_serial('templog')
-    temp_logger_thread = temp_logger()
-    temp_logger_thread.daemon = True
-    temp_logger_thread.start()
-    
-    # Authenticate with Google and get access token for logging into Hangouts
-    if not refresh_token:
-        access_token, refresh_token = google_authenticate(oauth2_client_ID, oauth2_client_secret)
-        # Save refresh token so we don't have to go through auth process everytime we want to login
-        config.set('General', 'RefreshToken', refresh_token)
-        with open(cwd + '/ammcon_config.ini', 'wb') as f:
-            config.write(f)
-    else:
-        access_token = google_refresh(oauth2_client_ID, oauth2_client_secret, refresh_token)
-    username = google_getemail(access_token)
-
-    # Setup Hangouts client and register XMPP plugins (order in which they are registered does not matter.)
-    # Not using real password for password arg as using OAUTH2 to login (arbitrarily set to 'yarp'.)
-    xmpp = _HangoutsClient(username, 'yarp')
-    xmpp.auto_reconnect = True
-    xmpp.register_plugin('xep_0030') # Service Discovery
-    xmpp.register_plugin('xep_0004') # Data Forms
-    xmpp.register_plugin('xep_0199') # XMPP Ping
-    xmpp.credentials['access_token'] = access_token
-
-    # Connect to the XMPP server and start processing XMPP stanzas.
-    if xmpp.connect(('talk.google.com', 5222)):
-        xmpp.process(block=True)
+    # Setup AmmCon server instance
+    server = _AmmConSever()
+    # Connect to Hangouts and start processing XMPP stanzas.
+    if server.connect(('talk.google.com', 5222)):
+        server.process(block=True)
         print('*****************************Done*******************************')
     else:
         print('Unable to connect to Hangouts.')
