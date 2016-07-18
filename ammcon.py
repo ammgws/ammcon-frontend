@@ -482,7 +482,9 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
         #self.max_temp_change = 2.0 # Max realistic temp change allowed in logging interval (default is 1min). (temp sensor is ±0.5degC)
 
         # Setup temp logger timer thread
-        temp_logger_thread = Timer(60.0, self.temp_logger)
+        # Timer only runs once - TIL
+        #temp_logger_thread = Timer(60.0, self.temp_logger)
+        temp_logger_thread = Thread(target=self.temp_logger)
         # Disable daemon for now as thread will not gracefully exit (could exit during file write. need to add stop event handler)
         #temp_logger_thread.daemon = True
         temp_logger_thread.start()
@@ -499,9 +501,9 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
         der_cert = ssl.PEM_cert_to_DER_cert(pem_cert)
         try:
             cert.verify('talk.google.com', der_cert)
-            xmpp_log.debug("CERT: Found GTalk certificate")
+            self.xmpp_log.debug("CERT: Found GTalk certificate")
         except cert.CertificateError as err:
-            xmpp_log.error(err.message)
+            self.xmpp_log.error(err.message)
             self.disconnect(send_close=False)
 
     def start(self, event):
@@ -553,15 +555,15 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
                     elif command == 'bus home':
                         msg = check_bus('home', datetime.datetime.now())
                     elif command == 'graph=actual':
-                        graph_type = 'actual'
+                        self.graph_type = 'actual'
                     elif command == 'graph=smooth':
-                        graph_type = 'smooth'
+                        self.graph_type = 'smooth'
                     elif command[:9] == 'smoothing':
                         if is_number(int(float(command[9:]))) and int(float(command[9:])) > 0 and int(float(command[9:])) < 10 :
                             smoothing = int(float(command[9:]))
                     elif command[:5] == 'graph':
                         if is_number(int(float(command[5:]))) and int(float(command[5:])) > 0 and int(float(command[5:])) < 25 :
-                            msg = graph(int(float(command[5:])), graph_type, smoothing)
+                            msg = graph(int(float(command[5:])), self.graph_type, self.smoothing)
                         else:
                             msg = 'Incorrect usage. Accepted range: graph1 to graph24'
                     elif command == 'help':
@@ -630,21 +632,28 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
 
     def temp_logger(self):
         '''Get current temperature and log to file.'''
+        print('Entered temp_logger thread')
         self.command_queue.put('temp')
         temp = self.response_queue.get()
         self.command_queue.put(None)
        
+        print('temp_logger debug pt1')
+        
         if not temp:
+            print('temp_logger debug pt2')
             self.command_queue.put('temp')
             temp = self.response_queue.get()
             self.command_queue.put(None)
+            print('temp_logger debug pt3')
         
         if (temp.startswith('Temp is ')):
             with open(cwd + '/temp_log.txt', 'a') as f:
                 f.write('{0}, {1}\n'.format(current_time(), str(temp[8:]).strip('\r\n')))
             sys.stdout.flush()
         else:
-            temp_log.debug("Unable to get valid temperature from microcontroller. Value received: {0}".format(str(temp)))
+            self.temp_log.debug("Unable to get valid temperature from microcontroller. Value received: {0}".format(str(temp)))
+            
+        time.sleep(60)
 
 def google_authenticate(oauth2_client_ID, oauth2_client_secret):
     # Start authorisation flow to get new access + refresh token.
