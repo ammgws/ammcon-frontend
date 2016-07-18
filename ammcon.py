@@ -364,8 +364,8 @@ class temp_logger(Thread):
                 f.write('{0}, {1}\n'.format(current_time(), str(temp).strip('\r\n')))
             sys.stdout.flush()
         else:
-            temp_log.debug("Unable to get valid temperature from microcontroller. Value received: {0}".format(str(temp))) 
-       
+            temp_log.debug("Unable to get valid temperature from microcontroller. Value received: {0}".format(str(temp)))
+
 def current_time():
     '''Return datetime object of current time in the format YYYY-MM-DD HH:MM.'''
     now = datetime.datetime.now()
@@ -637,7 +637,26 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
                     response = 'Rejected'
             
             msg.reply(response).send()
+    
+    def serial_manager(command_queue, response_queue):
+        for command, reps in iter(command_queue.get, None):
+            response = []
+            try:
+                for n in range(reps):
+                    response = ser.send(command)
+                    result.append(response)
+            finally:
+                result_queue.put(result)
 
+    commands = queue.Queue()
+    responses = queue.Queue()
+    start_serial_manager(thread_body, commands, responses)
+
+    loop:
+        commands.put(command)
+        print(responses.get())
+        commands.put(None)
+        
 def google_authenticate(oauth2_client_ID, oauth2_client_secret):
     # Start authorisation flow to get new access + refresh token.
 
