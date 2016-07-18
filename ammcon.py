@@ -29,8 +29,8 @@ import datetime
 
 import serial
 
-from threading import Thread
-from queue import queue
+from threading import Thread, Timer
+import queue as queue
 
 import smtplib
 from email.mime.text import MIMEText
@@ -322,50 +322,6 @@ def is_valid_temp(s):
         
     return False
   
-def send_RS232_command(ser, command):
-    '''Send command to microcontroller via RS232'''
-    ser.write(command)
-    time.sleep(0.2) # Give 200ms for microcontroller to react and respond
-    msg = ser.readline()
-    while ser.inWaiting() > 0:
-            msg += ser.readline()
-    command_log.info('{0},{1}\n'.format(current_time(), command))
-    # Convert byte array to ascii string, strip newline chars
-    return str(msg, 'ascii').rstrip('\r\n')
-
-class temp_logger(Thread):
-    '''Set up temp logger daemon thread. Need to look into using Queue'''
-    def __init__(self):
-        self.stopped = False
-        Thread.__init__(self)
-
-    def run(self):
-        while not self.stopped:
-            self.log_temp()
-            # Sleep 60 seconds in order to get 1 minute intervals between temp logs
-            time.sleep(60)
-    
-    def read_temp(self):
-        '''Get temperature from microcontroller. Try one more time if valid temperature not received.'''
-        temp = send_RS232_command(PCMD.micro_commands['temp'])
-        #if not is_valid_temp(temp):
-        if not temp:
-            temp = send_RS232_command(PCMD.micro_commands['temp'])
-            #if not is_valid_temp(temp):
-            if not temp:
-                return -1 # Flag as invalid temperature
-        return temp
-    
-    def log_temp(self):
-        '''Log temperature and current time to file. Need to look into using Queue'''
-        temp = self.read_temp()
-        if (temp != -1):
-            with open(cwd + '/temp_log.txt', 'a') as f:
-                f.write('{0}, {1}\n'.format(current_time(), str(temp).strip('\r\n')))
-            sys.stdout.flush()
-        else:
-            temp_log.debug("Unable to get valid temperature from microcontroller. Value received: {0}".format(str(temp)))
-
 def current_time():
     '''Return datetime object of current time in the format YYYY-MM-DD HH:MM.'''
     now = datetime.datetime.now()
@@ -450,6 +406,7 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
         # Setup loggers
         self.command_log = logging.getLogger('Ammcon.CommandLog')
         self.temp_log = logging.getLogger('Ammcon.TempLog')
+        self.xmpp_log = logging.getLogger('Ammcon.XMPP')
         # Lower log level for requests module so that OAUTH2 details etc aren't logged
         logging.getLogger('requests').setLevel(logging.WARNING)
         
@@ -523,13 +480,20 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
         self.graph_type = 'smooth'
         self.smoothing = 5
         #self.max_temp_change = 2.0 # Max realistic temp change allowed in logging interval (default is 1min). (temp sensor is ±0.5degC)
-        #self.prev_temp = avr_serial('templog')
 
-        # Setup temp logger thread
-        # Need to look into using Queue
-        temp_logger_thread = temp_logger()
-        temp_logger_thread.daemon = True
+        # Setup temp logger timer thread
+        temp_logger_thread = Timer(60.0, self.temp_logger)
+        # Disable daemon for now as thread will not gracefully exit (could exit during file write. need to add stop event handler)
+        #temp_logger_thread.daemon = True
         temp_logger_thread.start()
+        
+        # Setup serial manager thread and queues
+        self.command_queue = queue.Queue()
+        self.response_queue = queue.Queue()
+        serial_manager_thread = Thread(target=self.serial_manager, args=(self.command_queue,self.response_queue,))
+        # Disable daemon for now as thread will not gracefully exit (probably no problem for serial port thread, but disable for now)
+        #serial_manager_thread.daemon = True
+        serial_manager_thread.start()
         
     def invalid_cert(self, pem_cert):
         der_cert = ssl.PEM_cert_to_DER_cert(pem_cert)
@@ -572,15 +536,17 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
             
             hangouts_user = str(msg['from'])
             command = str(msg['body'])
+            response = None
             print('----------------')
             print('Hangouts User ID: {0}'.format(hangouts_user))
             print('Received command: {0}'.format(command))
             print('----------------')
-                        
+
             if self.amm_hangoutsID in hangouts_user:
+                print('ammID verified')
                 if command in PCMD.micro_commands:
                     print('Command received. Sending to microcontroller...')
-                    response = send_RS232_command(ser, PCMD.micro_commands[command])
+                    response = self.send_RS232_command(PCMD.micro_commands[command])
                 else:
                     if command == 'bus himeji':
                         msg = check_bus('himeji', datetime.datetime.now())
@@ -598,7 +564,7 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
                             msg = graph(int(float(command[5:])), graph_type, smoothing)
                         else:
                             msg = 'Incorrect usage. Accepted range: graph1 to graph24'
-                    elif 'help' in command:
+                    elif command == 'help':
                         msg = ( 'AmmCon commands:\n\n acxx [Set aircon temp. to xx]\n '
                                                      'ac mode auto/heat/dry/cool [Set aircon mode]\n'
                                                      'ac fan auto/quiet/1/2/3 [Set aircon fan setting]\n'
@@ -622,9 +588,11 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
                                                      'smoothingx [Set graph smoothing window to x]\n'
                                                      'bus himeji [Get times for next bus to Himeji]\n'
                                                      'bus home [Get times for next bus home]\n' )
+                    else:
+                        print('Command not recognised')
             elif self.wyn_hangoutsID in hangouts_user:
                     if command == 'temp':
-                        info = send_RS232_command(ser, PCMD.micro_commands[command])
+                        info = self.send_RS232_command(PCMD.micro_commands[command])
                         response = '{0}. Quite to your liking, Sir {1}, Lord of the Itiots?'.format(info, wyn_name)
                     elif 'bribe' in command:
                         response = 'Come meet me in person to discuss'
@@ -636,27 +604,48 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
                     print('Unauthorised user rejected')
                     response = 'Rejected'
             
-            msg.reply(response).send()
+            print('Response: {0} of type {1}'.format(response, type(response)))
+            if response:
+                msg.reply(response).send()
     
-    def serial_manager(command_queue, response_queue):
-        for command, reps in iter(command_queue.get, None):
+    def serial_manager(self, command_queue, response_queue):
+        for command in iter(command_queue.get, None):
             response = []
             try:
-                for n in range(reps):
-                    response = ser.send(command)
-                    result.append(response)
+                response = self.send_RS232_command(PCMD.micro_commands[command])
             finally:
-                result_queue.put(result)
+                response_queue.put(response)
+            command_queue.task_done()
+            
+    def send_RS232_command(self, command):
+        '''Send command to microcontroller via RS232'''
+        self.ser.write(command)
+        time.sleep(0.2) # Give 200ms for microcontroller to react and respond
+        response = self.ser.readline()
+        while self.ser.inWaiting() > 0:
+                response += self.ser.readline()
+        self.command_log.info('{0},{1}\n'.format(current_time(), command))
+        # Convert byte array to ascii string, strip newline chars
+        return str(response, 'ascii').rstrip('\r\n')
 
-    commands = queue.Queue()
-    responses = queue.Queue()
-    start_serial_manager(thread_body, commands, responses)
-
-    loop:
-        commands.put(command)
-        print(responses.get())
-        commands.put(None)
+    def temp_logger(self):
+        '''Get current temperature and log to file.'''
+        self.command_queue.put('temp')
+        temp = self.response_queue.get()
+        self.command_queue.put(None)
+       
+        if not temp:
+            self.command_queue.put('temp')
+            temp = self.response_queue.get()
+            self.command_queue.put(None)
         
+        if (temp.startswith('Temp is ')):
+            with open(cwd + '/temp_log.txt', 'a') as f:
+                f.write('{0}, {1}\n'.format(current_time(), str(temp[8:]).strip('\r\n')))
+            sys.stdout.flush()
+        else:
+            temp_log.debug("Unable to get valid temperature from microcontroller. Value received: {0}".format(str(temp)))
+
 def google_authenticate(oauth2_client_ID, oauth2_client_secret):
     # Start authorisation flow to get new access + refresh token.
 
