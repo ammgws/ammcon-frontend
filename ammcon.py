@@ -632,29 +632,26 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
 
     def temp_logger(self):
         '''Get current temperature and log to file.'''
-        print('Entered temp_logger thread')
-        self.command_queue.put('temp')
-        temp = self.response_queue.get()
-        self.command_queue.put(None)
-       
-        print('temp_logger debug pt1')
-        
-        if not temp:
-            print('temp_logger debug pt2')
+        while True:
+            #print('Entered temp_logger thread')
             self.command_queue.put('temp')
             temp = self.response_queue.get()
             self.command_queue.put(None)
-            print('temp_logger debug pt3')
-        
-        if (temp.startswith('Temp is ')):
-            with open(cwd + '/temp_log.txt', 'a') as f:
-                f.write('{0}, {1}\n'.format(current_time(), str(temp[8:]).strip('\r\n')))
-            sys.stdout.flush()
-        else:
-            self.temp_log.debug("Unable to get valid temperature from microcontroller. Value received: {0}".format(str(temp)))
-            
-        time.sleep(60)
 
+            if not temp:
+                self.command_queue.put('temp')
+                temp = self.response_queue.get()
+                self.command_queue.put(None)
+            
+            if (temp.startswith('Temp is ')):
+                with open(cwd + '/temp_log.txt', 'a') as f:
+                    f.write('{0}, {1}\n'.format(current_time(), str(temp[8:]).strip('\r\n')))
+                sys.stdout.flush()
+            else:
+                self.temp_log.debug("Unable to get valid temperature from microcontroller. Value received: {0}".format(str(temp)))
+
+            time.sleep(60)
+        
 def google_authenticate(oauth2_client_ID, oauth2_client_secret):
     # Start authorisation flow to get new access + refresh token.
 
