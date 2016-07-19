@@ -5,8 +5,6 @@
 from argparse import ArgumentParser
 import sys
 import logging
-import sleekxmpp
-from sleekxmpp.xmlstream import cert
 import ssl
 from urllib.parse import urlencode
 import requests
@@ -24,6 +22,8 @@ import queue as queue
 from imgurpython import ImgurClient
 import configparser
 import h_bytecmds as PCMD
+import sleekxmpp
+from sleekxmpp.xmlstream import cert
 
 __title__ = 'ammcon'
 __version__ = '0.0.1'
@@ -128,28 +128,28 @@ def check_bus(to, time):
 
     date_format = "%H:%M"
     busdatetimes = [datetime.datetime.strptime(t.strip('\r\n'), date_format) for t in bus_times]
-    busdatetimes = [t.replace(year=time.year, month = time.month, day = time.day) for t in busdatetimes]
+    busdatetimes = [t.replace(year=time.year, month=time.month, day=time.day) for t in busdatetimes]
 
     try:
-        if (busdatetimes.index(time)):
-            nextBus = time
+        if busdatetimes.index(time):
+            next_bus = time
     except (ValueError, IndexError):
-        nextBus = min(busdatetimes, key=lambda date: abs(time-date))
-        if nextBus < time:
+        next_bus = min(busdatetimes, key=lambda date: abs(time-date))
+        if next_bus < time:
             try:
-                nextBus = busdatetimes[busdatetimes.index(nextBus)+1]
-            except (IndexError):
-                nextBus = busdatetimes[0]
-                nextnextBus = busdatetimes[1]
-        previousBus = busdatetimes[busdatetimes.index(nextBus)-1]
+                next_bus = busdatetimes[busdatetimes.index(next_bus)+1]
+            except IndexError:
+                next_bus = busdatetimes[0]
+                nextnext_bus = busdatetimes[1]
+        previous_bus = busdatetimes[busdatetimes.index(next_bus)-1]
         try:
-            nextnextBus = busdatetimes[busdatetimes.index(nextBus)+1]
-        except (IndexError):
-            nextnextBus = busdatetimes[0]
+            nextnext_bus = busdatetimes[busdatetimes.index(next_bus)+1]
+        except IndexError:
+            nextnext_bus = busdatetimes[0]
 
-    results = ( '-------prev-------\n'+ '(' + bus_noriba[busdatetimes.index(previousBus)] + ') ' + previousBus.strftime(date_format) +
-            '\n-------next-------\n' + '(' + bus_noriba[busdatetimes.index(nextBus)] + ') ' + nextBus.strftime(date_format) +
-            '\n' + '(' + bus_noriba[busdatetimes.index(nextnextBus)] + ') ' + nextnextBus.strftime(date_format) )
+    results = ('-------prev-------\n'+ '(' + bus_noriba[busdatetimes.index(previousBus)] + ') ' + previousBus.strftime(date_format) +
+               '\n-------next-------\n' + '(' + bus_noriba[busdatetimes.index(next_bus)] + ') ' + next_bus.strftime(date_format) +
+               '\n' + '(' + bus_noriba[busdatetimes.index(nextnext_bus)] + ') ' + nextnext_bus.strftime(date_format))
 
     return results
 
@@ -191,46 +191,46 @@ def graph(hours, graph_type='smooth', smoothing=5):
     ref_time = datetime.datetime.now() - datetime.timedelta(hours=int(hours))
 
     # 正常では温度は１分おきに記録しているため、ログファイルの最後の（n=hours*60）エントリーだけ見たら処理時間を最小限にできる
-    tempList = subprocess.check_output(['tail', '-'+str(hours*60), os.path.join(cwd, 'temp_log.txt')])
-    tempList = tempList.decode()
-    tempList = tempList.split('\n')
+    temp_list = subprocess.check_output(['tail', '-'+str(hours*60), os.path.join(cwd, 'temp_log.txt')])
+    temp_list = temp_list.decode()
+    temp_list = temp_list.split('\n')
     # Remove last item since it will be null ('') due to the last line of the logfile ending with a newline char
-    del tempList[-1]
+    del temp_list[-1]
 
     # 上記抜粋したデータの記録時間を確認し該当するデータ（ref_time～現在時刻のデータ）のみ残しておく
     # ログファイルの形式: 2016-07-01 23:22, 28.00degC @53.00%RH
     #                   日付    時間,　　 温度　　 @湿度
-    editTempList = []
-    for line in tempList:
+    edited_temp_list = []
+    for line in temp_list:
         try:
             if is_number(line.strip('\n').split(', ')[1][:5]) and ref_time <= datetime.datetime.strptime(line.strip('\n').split(',')[0], date_format):
-                editTempList.append(line.strip())
+                edited_temp_list.append(line.strip())
         except (ValueError, IndexError, TypeError):
             pass
 
-    if len(editTempList) <= 2:
+    if len(edited_temp_list) <= 2:
         return "Not enough data points to create graph"
 
-    temptimes = [datetime.datetime.strptime(t.split(', ')[0], date_format) for t in editTempList]
+    temptimes = [datetime.datetime.strptime(t.split(', ')[0], date_format) for t in edited_temp_list]
     temptimes_float = mdates.date2num(temptimes) #convert datetime to float in order to use scipy interpolation function
-    tempvals = [float(row.split(', ')[1][:5]) for row in editTempList]
-    humidityvals = [float(row.split(', ')[1][11:16]) for row in editTempList]
+    tempvals = [float(row.split(', ')[1][:5]) for row in edited_temp_list]
+    humidityvals = [float(row.split(', ')[1][11:16]) for row in edited_temp_list]
 
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
     ax2 = ax1.twinx()  # Setup second y-axis (using same x-axis)
 
     if int(hours) == 1:
-        titleText = 'Temp over last ' + str(hours) + ' hour'
+        title_text = 'Temp over last ' + str(hours) + ' hour'
     else:
-        titleText = 'Temp over last ' + str(hours) + ' hours'
-    ax1.set_title(titleText)
+        title_text = 'Temp over last ' + str(hours) + ' hours'
+    ax1.set_title(title_text)
     ax1.set_xlabel('time')
     ax1.set_ylabel('degC')
     ax2.set_ylabel('%RH')
     rcParams.update({'figure.autolayout': True})
 
-    if (graph_type == 'actual'):
+    if graph_type == 'actual':
         # Plot raw data - mostly for debugging purposes
         ax1.plot(temptimes, tempvals)
         ax2.plot(temptimes, humidityvals, 'r')
@@ -245,19 +245,25 @@ def graph(hours, graph_type='smooth', smoothing=5):
     tempvals_min_time = temptimes[tempvals.index(tempvals_min)]
     tempvals_max = max(tempvals)
     tempvals_max_time = temptimes[tempvals.index(tempvals_max)]
-    ax1.annotate(str(tempvals_min), (mdates.date2num(tempvals_min_time),
-                    tempvals_min), xytext=(-20,20), textcoords='offset points',
-                    arrowprops = dict(arrowstyle='-|>'),
-                    bbox = dict(boxstyle='round,pad=0.2',
-                    fc='yellow', alpha=0.3))
-    ax1.annotate(str(tempvals_max), (mdates.date2num(tempvals_max_time), tempvals_max), xytext=(-20,20),
-                textcoords='offset points', arrowprops=dict(arrowstyle='-|>'),
-                bbox=dict(boxstyle='round,pad=0.2', fc='yellow', alpha=0.3))
+    ax1.annotate(str(tempvals_min),
+                 (mdates.date2num(tempvals_min_time), tempvals_min),
+                 xytext=(-20, 20),
+                 textcoords='offset points',
+                 arrowprops=dict(arrowstyle='-|>'),
+                 bbox=dict(boxstyle='round,pad=0.2', fc='yellow', alpha=0.3)
+                 )
+    ax1.annotate(str(tempvals_max),
+                 (mdates.date2num(tempvals_max_time), tempvals_max),
+                 xytext=(-20, 20),
+                 textcoords='offset points',
+                 arrowprops=dict(arrowstyle='-|>'),
+                 bbox=dict(boxstyle='round,pad=0.2', fc='yellow', alpha=0.3)
+                 )
 
     # Setup x-axis formatting
     ax1.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
     ax1.xaxis.set_major_locator(mdates.MinuteLocator(interval=hours*5))
-    # Rotate and right align x-axis date ticklabels so they don't overlap. 
+    # Rotate and right align x-axis date ticklabels so they don't overlap.
     plt.gcf().autofmt_xdate()
 
     folder = os.path.join(cwd, 'graphs')
@@ -283,6 +289,7 @@ def graph(hours, graph_type='smooth', smoothing=5):
 
 
 def is_number(s):
+    ''' Placeholder docstring - update later '''
     try:
         float(s)
         return True
@@ -300,19 +307,19 @@ def is_number(s):
     return False
 
 
-def is_valid_temp(s):
-    '''Determine if the detected change in room temperature is
-    within defined limit'''
-    # Current implementation is broken.
-    # Also need to consider the time between temp values
-    try:
-        is_number(s)
-        if abs(float(s) - float(prev_temp)) > MAX_TEMP_CHANGE:
-            return True
-    except ValueError:
-        pass
-
-    return False
+#def is_valid_temp(s):
+#    '''Determine if the detected change in room temperature is
+#    within defined limit'''
+#    # Current implementation is broken.
+#    # Also need to consider the time between temp values
+#    try:
+#        is_number(s)
+#        if abs(float(s) - float(prev_temp)) > MAX_TEMP_CHANGE:
+#            return True
+#    except ValueError:
+#        pass
+#
+#    return False
 
 
 def current_time():
@@ -361,29 +368,29 @@ def build_AC_command():
     global AC_SPEC
     global AC_POWER
 
-    if (AC_MODE == 'auto'):
+    if AC_MODE == 'auto':
         mode = '\x00'
-    elif (AC_MODE == 'cool'):
+    elif AC_MODE == 'cool':
         mode = '\x01'
-    elif (AC_MODE == 'dry'):
+    elif AC_MODE == 'dry':
         mode = '\x02'
-    elif (AC_MODE == 'heat'):
+    elif AC_MODE == 'heat':
         mode = '\x03'
 
-    if (AC_FAN == 'auto'):
+    if AC_FAN == 'auto':
         fan = '\x00'
-    elif (AC_FAN == 'quiet'):
+    elif AC_FAN == 'quiet':
         fan = '\x02'
-    elif (AC_FAN == '1'):
+    elif AC_FAN == '1':
         fan = '\x04'
-    elif (AC_FAN == '2'):
+    elif AC_FAN == '2':
         fan = '\x08'
-    elif (AC_FAN == '3'):
+    elif AC_FAN == '3':
         fan = '\x0c'
 
-    if (AC_SPEC == 'powerful'):
+    if AC_SPEC == 'powerful':
         spec = '\x01'
-    elif (AC_SPEC == 'sleep'):
+    elif AC_SPEC == 'sleep':
         spec = '\x03'
     else:
         spec = '\x00'
@@ -397,7 +404,7 @@ class _SerialSim():
 
     def __init__(self):
         self.random = __import__('random')
-        self.waiting = 0
+        self.waiting = False
         self.response = None
 
     def write(self, command):
@@ -405,9 +412,9 @@ class _SerialSim():
             temp = round(self.random.uniform(0.5, 40.0), 2)
             humidity = round(self.random.uniform(25.00, 90.00), 2)
             self.response = 'Temp is {0}degC @{1}%RH'.format(temp, humidity).encode()
-            self.waiting = 1
+            self.waiting = True
             time.sleep(2)  # Wait a couple secs for readline to finish
-            self.waiting = 0
+            self.waiting = False
         else:
             self.response = 'ohk test {0}'.format(self.random.randint(0, 1000)).encode()
 
@@ -415,11 +422,7 @@ class _SerialSim():
             return self.response
 
     def inWaiting(self):
-        if self.waiting == 1:
-            return True
-        else:
-            return False
-
+        return waiting
 
 class _AmmConSever(sleekxmpp.ClientXMPP):
     '''
@@ -516,7 +519,7 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
         # Setup serial manager thread and queues
         self.command_queue = queue.Queue()
         self.response_queue = queue.Queue()
-        serial_manager_thread = Thread(target=self.serial_manager, args=(self.command_queue,self.response_queue,))
+        serial_manager_thread = Thread(target=self.serial_manager, args=(self.command_queue, self.response_queue, ))
         # Disable daemon for now as thread will not gracefully exit (probably no problem for serial port thread, but disable for now)
         # serial_manager_thread.daemon = True
         serial_manager_thread.start()
@@ -536,7 +539,7 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
             self.xmpp_log.error(err.message)
             self.disconnect(send_close=False)
 
-    def start(self, event):
+    def start(self, event={}):
         '''
         Process the session_start event.
 
@@ -591,10 +594,10 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
                     elif command == 'graph=smooth':
                         self.graph_type = 'smooth'
                     elif command[:9] == 'smoothing':
-                        if is_number(int(float(command[9:]))) and int(float(command[9:])) > 0 and int(float(command[9:])) < 10 :
+                        if is_number(int(float(command[9:]))) and int(float(command[9:])) > 0 and int(float(command[9:])) < 10:
                             smoothing = int(float(command[9:]))
                     elif command[:5] == 'graph':
-                        if is_number(int(float(command[5:]))) and int(float(command[5:])) > 0 and int(float(command[5:])) < 25 :
+                        if is_number(int(float(command[5:]))) and int(float(command[5:])) > 0 and int(float(command[5:])) < 25:
                             msg = graph(int(float(command[5:])), self.graph_type, self.smoothing)
                         else:
                             msg = 'Incorrect usage. Accepted range: graph1 - graph24'
@@ -621,7 +624,7 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
                                                      'graph=smooth [Set graphing function to plot smoothed data]\n'
                                                      'smoothingx [Set graph smoothing window to x]\n'
                                                      'bus himeji [Get times for next bus to Himeji]\n'
-                                                     'bus home [Get times for next bus home]\n' )
+                                                     'bus home [Get times for next bus home]\n')
                     else:
                         print('Command not recognised')
             elif self.wyn_hangoutsID in hangouts_user:
@@ -644,7 +647,7 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
 
     def serial_manager(self, command_queue, response_queue):
         for command in iter(command_queue.get, None):
-            response = []
+            response = None
             try:
                 response = self.send_RS232_command(PCMD.micro_commands[command])
             finally:
@@ -675,7 +678,7 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
                 temp = self.response_queue.get()
                 self.command_queue.put(None)
 
-            if (temp.startswith('Temp is ')):
+            if temp.startswith('Temp is '):
                 with open(os.path.join(cwd, 'temp_log.txt'), 'a') as f:
                     f.write('{0}, {1}\n'.format(current_time(), str(temp[8:]).strip('\r\n')))
                 sys.stdout.flush()
