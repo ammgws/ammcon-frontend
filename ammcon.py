@@ -21,12 +21,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import requests
 import serial
-
 from imgurpython import ImgurClient
 from imgurpython.helpers.error import ImgurClientError
 import sleekxmpp
 from sleekxmpp.xmlstream import cert
 
+# for some reason these two get put down there by pylint/isort
+# even though they are part of standard lib?
 import queue
 import ssl
 
@@ -46,26 +47,20 @@ class _ImgurClient():
     '''
 
     def __init__(self):
-        self.config_values = self.read_config()
+        self.config_values = ConfigParser()
+        self.config_values.read(os.path.join(cwd, 'ammcon_config.ini'))
         self.client_id = self.config_values.get('Imgur', 'client_id')
         self.client_secret = self.config_values.get('Imgur', 'client_secret')
         self.access_token = self.config_values.get('Imgur', 'access_token')
         self.refresh_token = self.config_values.get('Imgur', 'refresh_token')
         self.client = ImgurClient(self.client_id, self.client_secret)
 
-    @staticmethod
-    def read_config():
-        '''Read in values for auth and/or login.'''
-        # Get client ID and secret from auth.ini
-        return ConfigParser().read(os.path.join(cwd, 'ammcon_config.ini'))
-
     def save_config(self):
         ''' Save tokens to config file.'''
-        imgur_config = self.config_values['Imgur']
-        imgur_config['access_token'] = self.access_token
-        imgur_config['refresh_token'] = self.refresh_token
+        self.config_values['Imgur']['access_token'] = self.access_token
+        self.config_values['Imgur']['refresh_token'] = self.refresh_token
         with open(os.path.join(cwd, 'ammcon_config.ini'), 'w') as config_file:
-            ConfigParser().write(config_file)
+            self.config_values.write(config_file)
 
     def authenticate(self):
         '''Authenticate with Imgur and obtain access & refresh tokens.'''
@@ -284,9 +279,9 @@ def graph(hours, graph_type='smooth', smoothing=5):
     imgur_client = _ImgurClient()
     try:
         imgur_client.login()
-    except ImgurClientError as e:
-        print(e.error_message)
-        print(e.status_code)
+    except ImgurClientError as err:
+        print(err.error_message)
+        print(err.status_code)
         imgur_client.authenticate()
     imgur_resp = imgur_client.upload(os.path.join(folder, filename))
 
