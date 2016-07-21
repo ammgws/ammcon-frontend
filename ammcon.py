@@ -661,7 +661,7 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
         response = self.ser.readline()
         while self.ser.inWaiting() > 0:
                 response += self.ser.readline()
-        self.command_log.info('{0},{1}\n'.format(current_time(), command))
+        self.command_log.info('%s %s', current_time(), command)
         # Convert byte array to ascii string, strip newline chars
         return str(response, 'ascii').rstrip('\r\n')
 
@@ -683,7 +683,8 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
                     text_file.write('{0}, {1}\n'.format(current_time(), temp[8:].strip('\r\n')))
                 sys.stdout.flush()
             else:
-                self.temp_log.debug('Unable to get valid temperature from microcontroller. Value received: {0}'.format(temp))
+                self.temp_log.debug('Unable to get valid temperature. '
+                                    'Value received: %s', temp)
             # Aim for 1 minute-ish intervals between temp logs
             time.sleep(60)
 
