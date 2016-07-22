@@ -19,17 +19,14 @@ from matplotlib import rcParams
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
+import queue
 import requests
 import serial
+import ssl
 from imgurpython import ImgurClient
 from imgurpython.helpers.error import ImgurClientError
 import sleekxmpp
 from sleekxmpp.xmlstream import cert
-
-# for some reason these two get put down there by pylint/isort
-# even though they are part of standard lib?
-import queue
-import ssl
 
 # Ammcon imports
 import h_bytecmds as PCMD
@@ -38,7 +35,7 @@ __title__ = 'ammcon'
 __version__ = '0.0.1'
 
 # Get absolute path of the dir script is run from
-cwd = sys.path[0]
+cwd = sys.path[0]  # pylint: disable=C0103
 
 
 class _ImgurClient():
@@ -93,50 +90,53 @@ def is_holiday():
     with open(os.path.join(cwd, 'holidays.txt'), 'r') as text_file:
         holidays = text_file.readlines()
     date_format = "%Y/%m/%d"
-    holiday_datetimes = [dt.datetime.strptime(t.strip('\r\n'), date_format) for t in holidays]
+    holiday_datetimes = [dt.datetime.strptime(t.strip('\r\n'), date_format)
+                         for t in holidays]
     holiday_datetimes = [t.date() for t in holiday_datetimes]
     return dt.date.today() in holiday_datetimes
 
 
-def check_bus(direction, ride_time):
+def check_bus(direction, _time):
     '''Check bus timetable since Google Maps doesn't support Himeji buses yet.
 
     Args:
         direction -- bus heading; either 'home' or 'himeji'
-        ride_time -- time you want to ride the bus (usually the current time)
+        _time -- time you want to ride the bus (usually the current time)
     Returns:
         Time of previous bus, next bus and next bus after that.
     '''
 
     # Provide shorthand since easier to input 'home' when sending from phone
     if direction == 'home':
-        to = 'shimotenohigashi'
+        dirn = 'shimotenohigashi'
 
     # Determine which timetable to reference based on the current day
     if is_holiday():
-        file_path = os.path.join(cwd, 'to_{0}bustimes_sunday.txt'.format(to))
-    elif ride_time.isoweekday() in range(1, 6):
-        file_path = os.path.join(cwd, 'to_{0}bustimes_weekday.txt'.format(to))
-    elif ride_time.isoweekday() == 6:
-        file_path = os.path.join(cwd, 'to_{0}bustimes_saturday.txt'.format(to))
-    elif ride_time.isoweekday() == 7:
-        file_path = os.path.join(cwd, 'to_{0}bustimes_sunday.txt'.format(to))
-    with open(file_path, 'r') as text_file:
+        filename = 'to_{0}bustimes_sunday.txt'.format(dirn)
+    elif _time.isoweekday() in range(1, 6):
+        filename = 'to_{0}bustimes_weekday.txt'.format(dirn)
+    elif _time.isoweekday() == 6:
+        filename = 'to_{0}bustimes_saturday.txt'.format(dirn)
+    elif _time.isoweekday() == 7:
+        filename = 'to_{0}bustimes_sunday.txt'.format(dirn)
+    with open(os.path.join(cwd, filename), 'r') as text_file:
         bus_sched = text_file.readlines()
 
     bus_noriba = [row.split(', ')[0] for row in bus_sched]
     bus_times = [row.split(', ')[1] for row in bus_sched]
 
     date_format = "%H:%M"
-    bus_datetimes = [dt.datetime.strptime(t.strip('\r\n'), date_format) for t in bus_times]
-    bus_datetimes = [t.replace(year=ride_time.year, month=ride_time.month, day=ride_time.day) for t in bus_datetimes]
+    bus_datetimes = [dt.datetime.strptime(t.strip('\r\n'), date_format)
+                     for t in bus_times]
+    bus_datetimes = [t.replace(year=_time.year, month=_time.month, day=_time.day)
+                     for t in bus_datetimes]
 
     try:
         if bus_datetimes.index(time):
-            next_bus = ride_time
+            next_bus = _time
     except (ValueError, IndexError):
-        next_bus = min(bus_datetimes, key=lambda date: abs(ride_time-date))
-        if next_bus < ride_time:
+        next_bus = min(bus_datetimes, key=lambda date: abs(_time-date))
+        if next_bus < _time:
             try:
                 next_bus = bus_datetimes[bus_datetimes.index(next_bus)+1]
             except IndexError:
@@ -158,7 +158,7 @@ def check_bus(direction, ride_time):
                                    next_bus.strftime(date_format),
                                    bus_noriba[bus_datetimes.index(nextnext_bus)],
                                    nextnext_bus.strftime(date_format)
-                                   )
+                                  )
     return results
 
 
@@ -195,24 +195,28 @@ def graph(hours, graph_type='smooth', smoothing=5):
     Returns:
         Message to send back to Hangouts user
     '''
-    date_format = "%Y-%m-%d %H:%M"
-    ref_time = dt.datetime.now() - dt.timedelta(hours=int(hours))
 
     # 正常では温度は１分おきに記録しているため、ログファイルの最後の（n=hours*60）エントリーだけ見たら処理時間を最小限にできる
     # Need to make this Windows friendly.. alternative to tail??
-    temp_list = subprocess.check_output(['tail', '-'+str(hours*60), os.path.join(cwd, 'temp_log.txt')])
+    temp_list = subprocess.check_output(['tail',
+                                         '-'+str(hours*60),
+                                         os.path.join(cwd,
+                                                      'temp_log.txt')])
     temp_list = temp_list.decode().split('\n')
-    # Remove last item since it will be null ('') due to the last line of 
+    # Remove last item since it will be null ('') due to the last line of
     # the logfile ending with a newline char
     del temp_list[-1]
 
     # 上記抜粋したデータの記録時間を確認し該当するデータ（ref_time～現在時刻のデータ）のみ残しておく
     # ログファイルの形式: 2016-07-01 23:22, 28.00degC @53.00%RH
     #                   日付    時間,　　 温度　　 @湿度
+    date_format = "%Y-%m-%d %H:%M"
+    ref_time = dt.datetime.now() - dt.timedelta(hours=int(hours))
     edited_temp_list = []
     for line in temp_list:
         try:
-            if is_number(line.strip('\n').split(', ')[1][:5]) and ref_time <= dt.datetime.strptime(line.strip('\n').split(',')[0], date_format):
+            if (is_number(line.strip('\n').split(', ')[1][:5]) and
+                    ref_time <= dt.datetime.strptime(line.strip('\n').split(',')[0], date_format)):
                 edited_temp_list.append(line.strip())
         except (ValueError, IndexError, TypeError):
             pass
@@ -254,14 +258,14 @@ def graph(hours, graph_type='smooth', smoothing=5):
                  textcoords='offset points',
                  arrowprops=dict(arrowstyle='-|>'),
                  bbox=dict(boxstyle='round,pad=0.2', fc='yellow', alpha=0.3)
-                 )
+                )
     ax1.annotate(str(temp_vals_max),
                  (mdates.date2num(temp_vals_max_time), temp_vals_max),
                  xytext=(-20, 20),
                  textcoords='offset points',
                  arrowprops=dict(arrowstyle='-|>'),
                  bbox=dict(boxstyle='round,pad=0.2', fc='yellow', alpha=0.3)
-                 )
+                )
 
     # Setup x-axis formatting
     ax1.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
@@ -281,7 +285,7 @@ def graph(hours, graph_type='smooth', smoothing=5):
         imgur_client.login()
     except ImgurClientError as err:
         print(err.error_message)
-        print(err.status_code)
+        # command_log.info('%s; %s', err.error_message, err.status_code)
         imgur_client.authenticate()
     imgur_resp = imgur_client.upload(os.path.join(folder, filename))
 
@@ -350,36 +354,33 @@ def build_ac_command(ac_temp, ac_mode, ac_fan, ac_spec, ac_power):
     '''Build up AC control command for microcontroller based on
     received Hangouts command.
     '''
+    temp = chr(int(ac_temp)-17)
 
-    if ac_mode == 'auto':
-        mode = '\x00'
-    elif ac_mode == 'cool':
-        mode = '\x01'
-    elif ac_mode == 'dry':
-        mode = '\x02'
-    elif ac_mode == 'heat':
-        mode = '\x03'
+    mode_dict = {'auto': '\x00',
+                 'cool': '\x01',
+                 'dry': '\x02',
+                 'heat': '\x03'}
+    mode = mode_dict[ac_mode]
 
-    if ac_fan == 'auto':
-        fan = '\x00'
-    elif ac_fan == 'quiet':
-        fan = '\x02'
-    elif ac_fan == '1':
-        fan = '\x04'
-    elif ac_fan == '2':
-        fan = '\x08'
-    elif ac_fan == '3':
-        fan = '\x0c'
+    fan_dict = {'auto': '\x00',
+                'quiet': '\x02',
+                '1': '\x04',
+                '2': '\x08',
+                '3': '\x0c'}
+    fan = fan_dict[ac_fan]
 
-    if ac_spec == 'powerful':
-        spec = '\x01'
-    elif ac_spec == 'sleep':
-        spec = '\x03'
+    spec_dict = {'powerful': '\x01',
+                 'sleep': '\x03',
+                 'default': '\x00'}
+    spec = spec_dict[ac_spec]
+
+    if ac_power == 'on':
+        power = '\x01'
     else:
-        spec = '\x00'
+        power = '\x00'
 
     # AC cmd: Start byte | header | power | temp | mode | fan | spec | end byte
-    cmd = '\xCE\xAC\x01' + chr(int(ac_temp)-17) + mode + fan + spec + '\x7F'
+    cmd = '\xCE\xAC{0}{1}{2}{3}{4}x7F'.format(power, temp, mode, fan, spec)
     return cmd
 
 
@@ -395,18 +396,20 @@ class _SerialSim():
         if command == PCMD.micro_commands['temp']:
             temp = round(self.random.uniform(0.5, 40.0), 2)
             humidity = round(self.random.uniform(25.00, 90.00), 2)
-            self.response = 'Temp is {0}degC @{1}%RH'.format(temp, humidity).encode()
+            self.response = 'Temp is {0}degC @{1}%RH'.format(temp,
+                                                             humidity).encode()
             self.waiting = True
             time.sleep(2)  # Wait a couple secs for readline to finish
             self.waiting = False
         else:
-            self.response = 'ohk test {0}'.format(self.random.randint(0, 1000)).encode()
+            random_msg = self.random.randint(0, 100)
+            self.response = 'ohk {0}'.format(random_msg).encode()
 
     def readline(self):
         '''Simulate ser.readline functionality.'''
         return self.response
 
-    def inWaiting(self):
+    def inWaiting(self):  # pylint: disable=C0103
         '''Simulate ser.inWaiting functionality.'''
         return self.waiting
 
@@ -429,7 +432,9 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
             try:
                 self.ser = serial.Serial('/dev/ttyUSB0', 57600, timeout=1)
             except serial.SerialException:
-                print('No device detected or could not connect - attempting reconnect in 10 seconds')
+                # Attempt to read from closed port
+                print('No device detected or could not connect - '
+                      'attempting reconnect in 10 seconds')
                 time.sleep(10)
                 self.ser = serial.Serial('/dev/ttyUSB0', 57600, timeout=1)
         else:
@@ -464,7 +469,9 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
             with open(config_path, 'wb') as config_file:
                 self.config.write(config_file)
         else:
-            self.access_token = google_refresh(self.oauth2_client_id, self.oauth2_client_secret, self.refresh_token)
+            self.access_token = google_refresh(self.oauth2_client_id,
+                                               self.oauth2_client_secret,
+                                               self.refresh_token)
         self.ammcon_email = google_getemail(self.access_token)
 
         # Setup new SleekXMPP client to connect to Hangouts
@@ -507,9 +514,8 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
         self.response_queue = queue.Queue()
         serial_manager_thread = Thread(target=self.serial_manager,
                                        args=(self.command_queue,
-                                             self.response_queue, )
-                                       )
-                              
+                                             self.response_queue, ))
+
         # Disable daemon for now as thread will not gracefully exit
         # (probably no problem for serial port thread, but disable for now)
         # serial_manager_thread.daemon = True
@@ -532,7 +538,7 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
             self.xmpp_log.error(err)
             self.disconnect(send_close=False)
 
-    def start(self, event):
+    def start(self, event):  # pylint: disable=W0613
         '''
         Process the session_start event.
 
@@ -550,6 +556,7 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
                      event does not provide any additional
                      data.
         '''
+
         self.send_presence()
         self.get_roster()
 
@@ -592,11 +599,17 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
                     elif command == 'graph=smooth':
                         self.graph_type = 'smooth'
                     elif command[:9] == 'smoothing':
-                        if is_number(int(float(command[9:]))) and int(float(command[9:])) > 0 and int(float(command[9:])) < 10:
+                        if (is_number(int(float(command[9:]))) and
+                                int(float(command[9:])) > 0 and
+                                int(float(command[9:])) < 10):
                             self.smoothing = int(float(command[9:]))
                     elif command[:5] == 'graph':
-                        if is_number(int(float(command[5:]))) and int(float(command[5:])) > 0 and int(float(command[5:])) < 25:
-                            response = graph(int(float(command[5:])), self.graph_type, self.smoothing)
+                        if (is_number(int(float(command[5:]))) and
+                                int(float(command[5:])) > 0 and
+                                int(float(command[5:])) < 25):
+                            response = graph(int(float(command[5:])),
+                                             self.graph_type,
+                                             self.smoothing)
                         else:
                             response = 'Accepted range: graph1 - graph24'
                     elif command == 'help':
@@ -627,18 +640,18 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
                     else:
                         print('Command not recognised')
             elif self.wyn_hangouts_id in hangouts_user:
-                    if command == 'temp':
-                        info = self.send_rs232_command(PCMD.micro_commands[command])
-                        response = '{0}. Quite to your liking, Sir {1}, Lord of the Itiots?'.format(info, self.wyn_name)
-                    elif 'bribe' in command:
-                        response = 'Come meet me in person to discuss'
-                    elif 'fef' in command:
-                        response = 'CHIP'
-                    else:
-                        response = '{0} evil thwarted'.format(self.wyn_name)
+                if command == 'temp':
+                    info = self.send_rs232_command(PCMD.micro_commands[command])
+                    response = '{0}. Quite to your liking, Sir {1}, Lord of the Itiots?'.format(info, self.wyn_name)
+                elif 'bribe' in command:
+                    response = 'Come meet me in person to discuss'
+                elif 'fef' in command:
+                    response = 'CHIP'
+                else:
+                    response = '{0} evil thwarted'.format(self.wyn_name)
             else:
-                    print('Unauthorised user rejected')
-                    response = 'Rejected'
+                print('Unauthorised user rejected')
+                response = 'Rejected'
 
             print('Response: {0} of type {1}'.format(response, type(response)))
             if response:
@@ -656,12 +669,23 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
 
     def send_rs232_command(self, command):
         '''Send command to microcontroller via RS232'''
-        self.ser.write(command)
+        try:
+            self.ser.write(command)
+        except serial.SerialTimeoutException:
+            #  Timeout for port exceeded (only if timeout is set).
+            return -1
+
         time.sleep(0.2)  # Give 200ms for microcontroller to react and respond
-        response = self.ser.readline()
+
+        try:
+            response = self.ser.readline()
+        except serial.SerialException:
+            # Attempt to read from closed port
+            return -2
+
         while self.ser.inWaiting() > 0:
-                response += self.ser.readline()
-        self.command_log.info('{0},{1}\n'.format(current_time(), command))
+            response += self.ser.readline()
+        self.command_log.info('Command sent: %s', command)
         # Convert byte array to ascii string, strip newline chars
         return str(response, 'ascii').rstrip('\r\n')
 
@@ -671,19 +695,19 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
             # print('Entered temp_logger thread')
             self.command_queue.put('temp')
             temp = self.response_queue.get()
-            self.command_queue.put(None)
 
             if not temp:
                 self.command_queue.put('temp')
                 temp = self.response_queue.get()
-                self.command_queue.put(None)
 
             if temp.startswith('Temp is '):
                 with open(os.path.join(cwd, 'temp_log.txt'), 'a') as text_file:
-                    text_file.write('{0}, {1}\n'.format(current_time(), temp[8:].strip('\r\n')))
+                    text_file.write('{0}, {1}\n'.format(current_time(),
+                                                        temp[8:].strip('\r\n')))
                 sys.stdout.flush()
             else:
-                self.temp_log.debug('Unable to get valid temperature from microcontroller. Value received: {0}'.format(temp))
+                self.temp_log.debug('Unable to get valid temperature. '
+                                    'Value received: %s', temp)
             # Aim for 1 minute-ish intervals between temp logs
             time.sleep(60)
 
@@ -693,8 +717,10 @@ def google_authenticate(oauth2_client_id, oauth2_client_secret):
 
     # Start by getting authorization_code for Hangouts scope.
     # Email info scope used to get email address for login.
-    # OAUTH2 client ID and secret are obtained through Google Apps Developers Console for the account I use for Ammcon.
-    oauth2_scope = 'https://www.googleapis.com/auth/googletalk https://www.googleapis.com/auth/userinfo.email'
+    # OAUTH2 client ID and secret are obtained through Google Apps Developers
+    # Console for the account I use for Ammcon.
+    oauth2_scope = ('https://www.googleapis.com/auth/googletalk '
+                    'https://www.googleapis.com/auth/userinfo.email')
     oauth2_login_url = 'https://accounts.google.com/o/oauth2/v2/auth?{}'.format(
         urlencode(dict(
             client_id=oauth2_client_id,
@@ -771,7 +797,7 @@ def main():
     # Set level to logging.DEBUG for debug, logging.ERROR for errors only.
     logging.basicConfig(level=5,
                         format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                        datefmt='%Y-%m-%d %H:%M"',
+                        datefmt='%Y-%m-%d %H:%M',
                         filename=os.path.join(cwd, 'ammcon.log'),
                         filemode='a')
     # Lower log level so that OAUTH2 details etc aren't logged
