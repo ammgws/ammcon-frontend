@@ -629,7 +629,7 @@ class _AmmConSever(sleekxmpp.ClientXMPP):
                                     'open/close [Open/close curtains]'
                                     'temp [Get current room temp.]'
                                     'sched on [Activate scheduler for aircon]'
-                                    'sched hour xx [Set scheduler hour]'
+                                    'sched hour xx [Set scheduler hour to xx]'
                                     'sched minute xx [Set scheduler minute]'
                                     'graphxx [Get graph of temp. over last xx hours]'
                                     'graph=actual [Set graphing function to plot raw data]'
