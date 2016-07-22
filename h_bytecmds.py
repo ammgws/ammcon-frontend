@@ -49,3 +49,11 @@ micro_commands = {  'AC off':b'\xCE\xAC\x00\x7F',
                     'tv mute':b'\xCE\xC1\x01\x7F',
                     'tv switch':b'\xCE\xC1\x02\x7F'
                 }
+                
+server_commands = ('bus himeji',
+                   'bus home',
+                   'graph=actual',
+                   'graph=smooth',
+                   'graph'
+                   'help'
+                   )
