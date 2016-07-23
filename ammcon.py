@@ -8,10 +8,10 @@ import logging
 import os
 import subprocess
 import sys
-import time
 from argparse import ArgumentParser
 from threading import Thread
 from urllib.parse import urlencode
+from time import sleep
 
 # Third party imports
 from configparser import ConfigParser
@@ -128,11 +128,13 @@ def check_bus(direction, _time):
     date_format = "%H:%M"
     bus_datetimes = [dt.datetime.strptime(t.strip('\r\n'), date_format)
                      for t in bus_times]
-    bus_datetimes = [t.replace(year=_time.year, month=_time.month, day=_time.day)
+    bus_datetimes = [t.replace(year=_time.year,
+                               month=_time.month,
+                               day=_time.day)
                      for t in bus_datetimes]
 
     try:
-        if bus_datetimes.index(time):
+        if bus_datetimes.index(_time):
             next_bus = _time
     except (ValueError, IndexError):
         next_bus = min(bus_datetimes, key=lambda date: abs(_time-date))
@@ -183,17 +185,16 @@ def sliding_mean(data, window=5):
 
     return smoothed_data
 
-
-def graph(num_hours):
-    '''Generate graph of past n hours of room temperature
+def get_graph_data(num_hours):
+    ''' Parse temp log file and get data for graphing
 
     Args:
-        hours -- how many hours back to graph
+        hours -- how many hours back to go
     Returns:
-        Message to send back to Hangouts user
+        Tuple of lists
     '''
-
-    # 正常では温度は１分おきに記録しているため、ログファイルの最後の（n=hours*60）エントリーだけ見たら処理時間を最小限にできる
+    # 正常では温度は１分おきに記録しているため、ログファイルの最後の（n=hours*60）エントリー
+    # のみ見たら処理時間を最小限にできる.
     # Need to make this Windows friendly.. alternative to tail??
     temp_log = subprocess.check_output(['tail',
                                         '-'+str(num_hours*60),
@@ -204,28 +205,42 @@ def graph(num_hours):
     # the logfile ending with a newline char
     del temp_log[-1]
 
-    # 上記抜粋したデータの記録時間を確認し該当するデータ（ref_time～現在時刻のデータ）のみ残しておく
+    # 上記データの記録時間を確認し該当するデータ（ref_time～現在時刻のデータ）のみ残しておく
     # ログファイルの形式: 2016-07-01 23:22, 28.00degC @53.00%RH
-    #                   日付    時間,　　 温度　　 @湿度
-    date_format = "%Y-%m-%d %H:%M"
+    #                  　　 日付    時間,　　 温度　　 　　　湿度
     ref_time = dt.datetime.now() - dt.timedelta(hours=int(num_hours))
     temp_times = []
     temp_vals = []
     humidity_vals = []
     for line in temp_log:
-        timestamp = dt.datetime.strptime(line.split(', ')[0], date_format)
-        temp = line.split(', ')[1][:5]
-        humidity = line.split(', ')[1][11:16]
+        _data = line.split(', ')
+        timestamp = dt.datetime.strptime(_data[0], "%Y-%m-%d %H:%M")
+        temp = _data[1][:5]
+        humidity = _data[1][11:16]
         if is_number(temp) and ref_time <= timestamp:
             temp_times.append(timestamp)
-            temp_vals.append(float(temp))
-            humidity_vals.append(float(humidity))
+            temp_vals.append(temp)
+            humidity_vals.append(humidity)
 
-    if len(temp_vals) <= 2:
+    if len(temp_times) <= 2:
         return "Not enough data points to create graph"
 
     temp_vals = sliding_mean(temp_vals)
     humidity_vals = sliding_mean(humidity_vals)
+
+    return (temp_times, temp_vals, humidity_vals)
+
+
+def graph(num_hours):
+    '''Generate graph of past n hours of room temperature
+
+    Args:
+        hours -- how many hours back to graph
+    Returns:
+        Message to send back to Hangouts user
+    '''
+
+    temp_times, temp_vals, humidity_vals = get_graph_data(num_hours)
 
     # Setup plot, title, axes labels
     fig = plt.figure()
@@ -245,19 +260,19 @@ def graph(num_hours):
     ax2.plot(temp_times, humidity_vals, 'red')
 
     # Annotate the min and max temps on the graph
-    temp_vals_min = min(temp_vals)
-    temp_vals_min_time = temp_times[temp_vals.index(temp_vals_min)]
-    temp_vals_max = max(temp_vals)
-    temp_vals_max_time = temp_times[temp_vals.index(temp_vals_max)]
-    ax1.annotate(str(temp_vals_min)[:5],
-                 xy=(mdates.date2num(temp_vals_min_time), temp_vals_min),
+    min_temp = min(temp_vals)
+    min_timestamp = temp_times[temp_vals.index(min_temp)]
+    max_temp = max(temp_vals)
+    max_timestamp = temp_times[temp_vals.index(max_temp)]
+    ax1.annotate(str(min_temp)[:5],
+                 xy=(mdates.date2num(min_timestamp), min_temp),
                  xytext=(-20, 20),
                  textcoords='offset points',
                  arrowprops=dict(arrowstyle='-|>'),
                  bbox=dict(boxstyle='round,pad=0.2', fc='yellow', alpha=0.3)
                 )
-    ax1.annotate(str(temp_vals_max)[:5],
-                 xy=(mdates.date2num(temp_vals_max_time), temp_vals_max),
+    ax1.annotate(str(max_temp)[:5],
+                 xy=(mdates.date2num(max_timestamp), max_temp),
                  xytext=(-20, 20),
                  textcoords='offset points',
                  arrowprops=dict(arrowstyle='-|>'),
@@ -273,7 +288,7 @@ def graph(num_hours):
     folder = os.path.join(cwd, 'graphs')
     if not os.path.exists(folder):
         os.makedirs(folder)
-    filename = 'tempPlot_{0}.png'.format(time.strftime("%Y%m%d_%H-%M-%S"))
+    filename = 'tempPlot_{0}.png'.format(dt.datetime.now().strftime("%Y%m%d_%Hh%Mm%Ss"))
     plt.savefig(os.path.join(folder, filename))
 
     # Login to Imgur and upload image
@@ -396,7 +411,7 @@ class _SerialSim():
             self.response = 'Temp is {0}degC @{1}%RH'.format(temp,
                                                              humidity).encode()
             self.waiting = True
-            time.sleep(2)  # Wait a couple secs for readline to finish
+            sleep(2)  # Wait a couple secs for readline to finish
             self.waiting = False
         else:
             random_msg = self.random.randint(0, 100)
@@ -480,17 +495,17 @@ class _AmmConSever(ClientXMPP):
 
         # Setup temp logger timer thread
         temp_logger_thread = Thread(target=self.temp_logger)
-        # Disable daemon for now as thread will not gracefully exit
-        # (could exit during file write. need to add stop event handler))
-        temp_logger_thread.daemon = True
+        # Disable daemon so that thread isn't killed during a file write
+        temp_logger_thread.daemon = False
+        self.stop_threads = 0  # flag used to gracefully exit thread
         temp_logger_thread.start()
 
     def authenticate(self, config_path):
         ''' Get access token for Hangouts login. '''
         # Get Hangouts login details from config file
-        refresh_token = self.config.get('General', 'RefreshToken')
-        oauth2_client_id = self.config.get('General', 'OAuth2_Client_ID')
-        oauth2_client_secret = self.config.get('General', 'OAuth2_Client_Secret')
+        client_id = self.config.get('General', 'client_id')
+        client_secret = self.config.get('General', 'client_secret')
+        refresh_token = self.config.get('General', 'refresh_token')
 
         # Authenticate with Google and get access token for Hangouts
         if not refresh_token:
@@ -499,16 +514,16 @@ class _AmmConSever(ClientXMPP):
             self.xmpp_log.debug('No refresh token in config file (val = %s of type %s)',
                                 refresh_token,
                                 type(refresh_token))
-            access_token, refresh_token = google_authenticate(oauth2_client_id, oauth2_client_secret)
+            access_token, refresh_token = google_authenticate(client_id, client_secret)
             # Save refresh token for next login
-            self.config.set('General', 'RefreshToken', refresh_token)
+            self.config.set('General', 'refresh_token', refresh_token)
             with open(config_path, 'wb') as config_file:
                 self.config.write(config_file)
         else:
             # Use existing refresh token to get access token
             self.xmpp_log.debug('Found refresh token in config file. Generating access token...')
-            access_token = google_refresh(oauth2_client_id,
-                                          oauth2_client_secret,
+            access_token = google_refresh(client_id,
+                                          client_secret,
                                           refresh_token)
         return access_token
 
@@ -525,7 +540,7 @@ class _AmmConSever(ClientXMPP):
                 # Attempt to read from closed port
                 print('No device detected or could not connect - '
                       'attempting reconnect in 10 seconds')
-                time.sleep(10)
+                sleep(10)
                 self.ser = serial.Serial('/dev/ttyUSB0', 57600, timeout=1)
         else:
             # Set up fake serial port to allow testing without hardware
@@ -663,7 +678,7 @@ class _AmmConSever(ClientXMPP):
             #  Timeout for port exceeded (only if timeout is set).
             return -1
 
-        time.sleep(0.2)  # Give 200ms for microcontroller to react and respond
+        sleep(0.2)  # Give 200ms for microcontroller to react and respond
 
         try:
             response = self.ser.readline()
@@ -679,7 +694,7 @@ class _AmmConSever(ClientXMPP):
 
     def temp_logger(self):
         '''Get current temperature and log to file.'''
-        while True:
+        while self.stop_threads == 0:
             # print('Entered temp_logger thread')
             self.command_queue.put('temp')
             temp = self.response_queue.get()  # block until response is found
@@ -688,12 +703,13 @@ class _AmmConSever(ClientXMPP):
                 with open(os.path.join(cwd, 'temp_log.txt'), 'a') as text_file:
                     text_file.write('{0}, {1}\n'.format(current_time(),
                                                         temp[8:].strip('\r\n')))
-                sys.stdout.flush()
             else:
                 self.temp_log.debug('Unable to get valid temperature. '
                                     'Value received: %s', temp)
-            # Aim for 1 minute-ish intervals between temp logs
-            time.sleep(60)
+            # Aim for 1 minute intervals between temp logs. Break it up into
+            # 1sec sleeps so don't have to wait 60s when quitting thread.
+            for _ in range(60):
+                sleep(1)
 
 
 def google_authenticate(oauth2_client_id, oauth2_client_secret):
@@ -793,6 +809,9 @@ def main():
     # Connect to Hangouts and start processing XMPP stanzas.
     if server.connect(address=('talk.google.com', 5222), reattempt=True):
         server.process(block=True)
+        # When the above is interrupted the server instance will end, so allow
+        # temp logger thread to exit gracefully by sending stop signal.
+        server.stop_threads = 1
         print('****************************Done******************************')
     else:
         print('Unable to connect to Hangouts.')
