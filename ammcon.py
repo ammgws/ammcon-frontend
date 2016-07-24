@@ -5,25 +5,25 @@
 # Imports from Python Standard Library
 import datetime as dt
 import logging
-import os
-import subprocess
-import sys
+import os.path
 from argparse import ArgumentParser
+from subprocess import check_output
+from sys import path
 from threading import Thread
-from urllib.parse import urlencode
 from time import sleep
+from urllib.parse import urlencode
 
 # Third party imports
 from configparser import ConfigParser
 from matplotlib import rcParams
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
-import queue
 import requests
 import serial
 import ssl
 from imgurpython import ImgurClient
 from imgurpython.helpers.error import ImgurClientError
+from queue import Queue
 from sleekxmpp import ClientXMPP
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp.xmlstream import cert
@@ -35,7 +35,7 @@ __title__ = 'ammcon'
 __version__ = '0.0.1'
 
 # Get absolute path of the dir script is run from
-cwd = sys.path[0]  # pylint: disable=C0103
+cwd = path[0]  # pylint: disable=C0103
 
 
 class _ImgurClient():
@@ -179,11 +179,12 @@ def sliding_mean(data, window=5):
                         min(i + window + 1, len(data)))
         avg = 0
         for j in indices:
-            avg += data[j]
+            avg += float(data[j])
         avg /= float(len(indices))
         smoothed_data.append(avg)
 
     return smoothed_data
+
 
 def get_graph_data(num_hours):
     ''' Parse temp log file and get data for graphing
@@ -196,10 +197,9 @@ def get_graph_data(num_hours):
     # 正常では温度は１分おきに記録しているため、ログファイルの最後の（n=hours*60）エントリー
     # のみ見たら処理時間を最小限にできる.
     # Need to make this Windows friendly.. alternative to tail??
-    temp_log = subprocess.check_output(['tail',
-                                        '-'+str(num_hours*60),
-                                        os.path.join(cwd,
-                                                     'temp_log.txt')])
+    temp_log = check_output(['tail',
+                             '-'+str(num_hours*60),
+                             os.path.join(cwd, 'temp_log.txt')])
     temp_log = temp_log.decode().split('\n')
     # Remove last item since it will be null ('') due to the last line of
     # the logfile ending with a newline char
@@ -485,8 +485,8 @@ class _AmmConSever(ClientXMPP):
         self.add_event_handler("ssl_invalid_cert", self.invalid_cert)
 
         # Setup serial manager thread and queues
-        self.command_queue = queue.Queue()
-        self.response_queue = queue.Queue()
+        self.command_queue = Queue()
+        self.response_queue = Queue()
         serial_manager_thread = Thread(target=self.serial_manager,
                                        args=(self.command_queue,
                                              self.response_queue, ))
