@@ -112,13 +112,13 @@ def check_bus(direction, _time):
 
     # Determine which timetable to reference based on the current day
     if is_holiday():
-        filename = 'to_{0}bustimes_sunday.txt'.format(dirn)
+        filename = 'to_{0}_bustimes_sunday.txt'.format(dirn)
     elif _time.isoweekday() in range(1, 6):
-        filename = 'to_{0}bustimes_weekday.txt'.format(dirn)
+        filename = 'to_{0}_bustimes_weekday.txt'.format(dirn)
     elif _time.isoweekday() == 6:
-        filename = 'to_{0}bustimes_saturday.txt'.format(dirn)
+        filename = 'to_{0}_bustimes_saturday.txt'.format(dirn)
     elif _time.isoweekday() == 7:
-        filename = 'to_{0}bustimes_sunday.txt'.format(dirn)
+        filename = 'to_{0}_bustimes_sunday.txt'.format(dirn)
     with open(os.path.join(cwd, filename), 'r') as text_file:
         bus_sched = text_file.readlines()
 
@@ -150,10 +150,10 @@ def check_bus(direction, _time):
         except IndexError:
             nextnext_bus = bus_datetimes[0]
 
-    results = ('-------prev-------'
-               '({0}) {1}'
-               '-------next-------'
-               '({2}) {3}'
+    results = ('-------prev-------\n'
+               '({0}) {1}\n'
+               '-------next-------\n'
+               '({2}) {3}\n'
                '({4}) {5}').format(bus_noriba[bus_datetimes.index(previous_bus)],
                                    previous_bus.strftime(date_format),
                                    bus_noriba[bus_datetimes.index(next_bus)],
