@@ -546,14 +546,14 @@ class _AmmConSever(ClientXMPP):
                                           refresh_token)
         return access_token
 
-    def auth_workaround(self, config_path):
+    def reconnect_workaround(self, config_path):
         ''' Workaround for SleekXMPP reconnect.
         If a reconnect is attempted after access token is expired,
         auth fails and the client is stopped. Get around this by updating the
         access token whenever the client establishes a connection to the XMPP
         server. By product is that access token is requested twice upon startup.
         '''
-        self.credentials['access_token'] = self.authenticate(self, config_path)
+        self.credentials['access_token'] = self.authenticate(config_path)
 
     def setup_serial(self, debug_mode):
         ''' Setup serial port. If debug is set then create fake port. '''
