@@ -445,6 +445,7 @@ class _AmmConSever(ClientXMPP):
         # Read in Ammcon config values
         self.config = ConfigParser()
         self.config.read(config_path)
+        self.config_path = config_path
 
         # Get AmmCon user information
         self.amm_hangouts_id = self.config.get('Amm', 'HangoutsID')
@@ -466,6 +467,7 @@ class _AmmConSever(ClientXMPP):
         # at the time reconnect is attempted.
         self.auto_reconnect = True
         # Register XMPP plugins (order does not matter.)
+        # To do: remove unused plugins
         self.register_plugin('xep_0030')  # Service Discovery
         self.register_plugin('xep_0004')  # Data Forms
         self.register_plugin('xep_0199')  # XMPP Ping
@@ -490,7 +492,7 @@ class _AmmConSever(ClientXMPP):
         # reconnect after one hour has passed, the sasl_mechanism will submit
         # the old access token and end up failing (failed_auth') and the server
         # instance is ended.
-        self.add_event_handler('connected', self.reconnect_workaround(config_path))
+        self.add_event_handler('connected', self.reconnect_workaround)
 
         # Using a Google Apps custom domain, the certificate
         # does not contain the custom domain, just the GTalk
@@ -546,14 +548,14 @@ class _AmmConSever(ClientXMPP):
                                           refresh_token)
         return access_token
 
-    def reconnect_workaround(self, config_path):
+    def reconnect_workaround(self, event):  # pylint: disable=W0613
         ''' Workaround for SleekXMPP reconnect.
         If a reconnect is attempted after access token is expired,
         auth fails and the client is stopped. Get around this by updating the
         access token whenever the client establishes a connection to the XMPP
         server. By product is that access token is requested twice upon startup.
         '''
-        self.credentials['access_token'] = self.authenticate(config_path)
+        self.credentials['access_token'] = self.authenticate(self.config_path)
 
     def setup_serial(self, debug_mode):
         ''' Setup serial port. If debug is set then create fake port. '''
