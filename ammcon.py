@@ -39,9 +39,7 @@ cwd = path[0]  # pylint: disable=C0103
 
 
 class _ImgurClient():
-    '''
-    Handle authentication and image uploading to Imgur.
-    '''
+    ''' Handle authentication and image uploading to Imgur. '''
 
     def __init__(self):
         self.config_values = ConfigParser()
@@ -458,9 +456,14 @@ class _AmmConSever(ClientXMPP):
         ammcon_email = google_getemail(access_token)
 
         # Setup new SleekXMPP client to connect to Hangouts
-        # Not passing in real password as using OAUTH2 to login
-        ClientXMPP.__init__(self, ammcon_email, 'yarp')
+        # Not passing in password arg as using OAUTH2 to login
+        ClientXMPP.__init__(self,
+                            jid=ammcon_email,
+                            password=None,
+                            sasl_mech='X-OAUTH2')
         self.credentials['access_token'] = access_token
+        # Note auto_reconnect seems to be broken if access token is expired
+        # at the time reconnect is attempted.
         self.auto_reconnect = True
         # Register XMPP plugins (order does not matter.)
         self.register_plugin('xep_0030')  # Service Discovery
@@ -470,12 +473,24 @@ class _AmmConSever(ClientXMPP):
         # The session_start event will be triggered when the
         # XMPP client establishes its connection with the server
         # and the XML streams are ready for use. We want to
-        # listen for this event so that we can initialize
-        # our roster.
-        self.add_event_handler("session_start", self.start)
+        # listen for this event so that we can initialize our roster.
+        self.add_event_handler('session_start', self.start)
 
-        # The message event is triggered whenever a message stanza is received.
-        self.add_event_handler("message", self.message)
+        # Triggered whenever a message stanza is received.
+        # Note this includes MUC and error messages.
+        self.add_event_handler('message', self.message)
+
+        # Triggered whenever a 'connected' xmpp event is stanza is received,
+        # in particular when connection to xmpp server is established.
+        # Fetches a new access token and update the class' access_token value.
+        # This is a workaround for a bug I've encountered when SleekXMPP
+        # attempts to reconnect, but fails due to using an old access token.
+        # Access token is first set when initialising the client, however since
+        # Google access tokens expire after one hour, if SleekXMPP attempts a
+        # reconnect after one hour has passed, the sasl_mechanism will submit
+        # the old access token and end up failing (failed_auth') and the server
+        # instance is ended.
+        self.add_event_handler('connected', self.reconnect_workaround(config_path))
 
         # Using a Google Apps custom domain, the certificate
         # does not contain the custom domain, just the GTalk
@@ -501,7 +516,9 @@ class _AmmConSever(ClientXMPP):
         temp_logger_thread.start()
 
     def authenticate(self, config_path):
-        ''' Get access token for Hangouts login. '''
+        ''' Get access token for Hangouts login.
+        Note that Google access token expires in 3600 seconds.
+        '''
         # Get Hangouts login details from config file
         client_id = self.config.get('General', 'client_id')
         client_secret = self.config.get('General', 'client_secret')
@@ -514,18 +531,29 @@ class _AmmConSever(ClientXMPP):
             self.xmpp_log.debug('No refresh token in config file (val = %s of type %s)',
                                 refresh_token,
                                 type(refresh_token))
-            access_token, refresh_token = google_authenticate(client_id, client_secret)
+            access_token, refresh_token = google_authenticate(client_id,
+                                                              client_secret)
             # Save refresh token for next login
             self.config.set('General', 'refresh_token', refresh_token)
             with open(config_path, 'wb') as config_file:
                 self.config.write(config_file)
         else:
             # Use existing refresh token to get access token
-            self.xmpp_log.debug('Found refresh token in config file. Generating access token...')
+            self.xmpp_log.debug('Found refresh token in config file. '
+                                'Generating access token...')
             access_token = google_refresh(client_id,
                                           client_secret,
                                           refresh_token)
         return access_token
+
+    def auth_workaround(self, config_path):
+        ''' Workaround for SleekXMPP reconnect.
+        If a reconnect is attempted after access token is expired,
+        auth fails and the client is stopped. Get around this by updating the
+        access token whenever the client establishes a connection to the XMPP
+        server. By product is that access token is requested twice upon startup.
+        '''
+        self.credentials['access_token'] = self.authenticate(self, config_path)
 
     def setup_serial(self, debug_mode):
         ''' Setup serial port. If debug is set then create fake port. '''
@@ -754,6 +782,10 @@ def google_authenticate(oauth2_client_id, oauth2_client_secret):
 
 def google_refresh(oauth2_client_id, oauth2_client_secret, refresh_token):
     '''Make an access token request using existing refresh token.'''
+    # Google has limit of 25 refresh tokens per user account per client.
+    # When limit reached, creating a new token automatically invalidates the
+    # oldest token without warning. (Limit does not apply to service accounts.)
+    # https://developers.google.com/accounts/docs/OAuth2#expiration
     token_request_data = {
         'client_id': oauth2_client_id,
         'client_secret': oauth2_client_secret,
@@ -764,6 +796,7 @@ def google_refresh(oauth2_client_id, oauth2_client_secret, refresh_token):
     resp = requests.post(oauth2_token_request_url, data=token_request_data)
     values = resp.json()
     access_token = values['access_token']
+    print('Access token expires in {} seconds'.format(values['expires_in']))
     return access_token
 
 
@@ -807,7 +840,9 @@ def main():
     server = _AmmConSever(args.mode, args.config_path)
 
     # Connect to Hangouts and start processing XMPP stanzas.
-    if server.connect(address=('talk.google.com', 5222), reattempt=True):
+    if server.connect(address=('talk.google.com', 5222),
+                      reattempt=True,
+                      use_tls=True):
         server.process(block=True)
         # When the above is interrupted the server instance will end, so allow
         # temp logger thread to exit gracefully by sending stop signal.
