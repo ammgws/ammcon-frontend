@@ -196,8 +196,6 @@ class HangoutsClient(ClientXMPP):
                     hours = int(float(command[5:]))
                     if helpers.is_number(hours) and 1 < hours <= 24:
                         response = helpers.graph(hours)
-                elif command.startswith('interval'):
-                    self.templog_interval = int(command[8:])
                 elif command == 'help':
                     response = ('AmmCon commands:\n'
                                 'acxx [Set aircon temp. to xx]\n'
