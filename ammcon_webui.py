@@ -6,10 +6,9 @@ import logging
 import logging.handlers
 import os.path
 from os import urandom  # pylint: disable=C0412
-from queue import Queue  # pylint: disable=C0411
 from sys import path
 # Third party imports
-from celery import Celery
+# from celery import Celery
 from flask import Flask, flash, json, redirect, render_template, request, url_for
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from flask_sqlalchemy import SQLAlchemy
@@ -17,31 +16,47 @@ from flask_sqlalchemy import SQLAlchemy
 from auth import OAuthSignIn
 import h_bytecmds as PCMD
 import helpers
-from hangoutsclient import HangoutsClient
-from serialmanager import SerialManager
-from templogger import TempLogger
+from huey_config import huey  # import our "huey" object
+from huey_worker import handle_command  # import our task
 
 
+# Flask configuration
 app = Flask(__name__, template_folder='templates')
 app.config.from_object('config')
-celery = make_celery(app)
+# Generate secret key using the operating system's RNG.
+# This key is used to sign sessions (i.e. cookies), but is also needed for
+# Flask's "flash" to work.
+app.secret_key = urandom(24)
 
+# Celery configuration - to implement later after figuring out best practice
+# celery = Celery(app.name,
+#                backend=app.config['CELERY_BACKEND'],
+#                broker=app.config['CELERY_BROKER_URL'])
+# celery.conf.update(app.config)
+# TaskBase = celery.Task
+# class ContextTask(TaskBase):
+#    abstract = True
+#    def __call__(self, *args, **kwargs):
+#        with app.app_context():
+#            return TaskBase.__call__(self, *args, **kwargs)
+# celery.Task = ContextTask
+
+# SQLAlchemy configuration
 if os.environ.get('DATABASE_URL') is None:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
-    
-# Generate secret key using the operating system's RNG.
-# This key is used to sign sessions (i.e. cookies), but is also needed for
-# Flask's flashing system to work.
-app.secret_key = urandom(24)
-
 db = SQLAlchemy(app)
 
+# Flask-Login configuration
 lm = LoginManager(app)
-# View to which non-logged in users will be redirected to
-lm.login_view = 'login'
+lm.login_view = 'login'  # Rediret non-logged in users to this view
 lm.session_protection = "strong"
+
+
+@lm.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 # Get absolute path of the dir script is run from
 cwd = path[0]  # pylint: disable=C0103
@@ -59,37 +74,6 @@ log_handler.setFormatter(log_format)
 logger.addHandler(log_handler)
 # Lower requests module's log level so that OAUTH2 details aren't logged
 logging.getLogger('requests').setLevel(logging.WARNING)
-# Quieten SleekXMPP output
-logging.getLogger('sleekxmpp.xmlstream.xmlstream').setLevel(logging.INFO)
-logging.info('############### Starting Ammcon ###############')
-
-# Setup queues for communicating with serial port thread
-command_queue = Queue()
-response_queue = Queue()
-
-# Setup and start serial port manager thread.
-# Port: Linux using FTDI USB adaptor; '/dev/ttyUSB0' should be OK.
-#       Linux using rPi GPIO Rx/Tx pins; '/dev/ttyAMA0'
-#       Windows using USB adaptor or serial port; 'COM1', 'COM2', etc.
-serial_port = SerialManager('/dev/ttyUSB0',
-                            command_queue, response_queue)
-serial_port.start()
-
-# Setup temp logging thread
-temp_logger = TempLogger(60, cwd,
-                         command_queue, response_queue)
-# Start temp logger thread
-temp_logger.start()
-
-# Setup Hangouts client instance
-hangouts = HangoutsClient('ammcon_config.ini',
-                          command_queue, response_queue)
-# Connect to Hangouts and start processing XMPP stanzas.
-if hangouts.connect(address=('talk.google.com', 5222),
-                    reattempt=True, use_tls=True):
-    hangouts.process(block=False)
-else:
-    logging.error('Unable to connect to Hangouts.')
 
 # Create SQLAlchemy database file if it does not already exist.
 db.create_all()
@@ -100,11 +84,6 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(64), nullable=False, unique=True)
     nickname = db.Column(db.String(64), nullable=False)
-
-
-@lm.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
 
 
 @app.route('/')
@@ -131,10 +110,11 @@ def run_command():
     command = request.args.get('command', '', type=str)
     logging.debug('[WebUI] Command "%s" received. '
                   'Sending to command queue for processing...', command)
-    # command_queue.put(PCMD.micro_commands.get(command, "invalid"))
-    # response = response_queue.get()  # blocks until response is found
     command = PCMD.micro_commands.get(command, "invalid")
-    response = get_cmd_response.delay(command)
+    command_task = handle_command(command)
+    response = command_task.get(blocking=True)
+    # if/when using celery:
+    # response = get_cmd_response.delay(command)
     logging.debug('[WebUI] Received reply into response queue. '
                   'Reply received: %s', helpers.print_bytearray(response))
 
@@ -160,12 +140,36 @@ def run_command():
     return json.dumps({'response': response})
 
 
-@celery.task()
-def get_cmd_response():
-    response = response_queue.get()  # blocks until response is found
-    return response
+#@celery.task()
+#def get_cmd_response():
+#    response = response_queue.get()  # blocks until response is found
+#    # response.wait()
+#    return response
 
-# result.wait()
+
+#@celery.task()
+#def serial_port_worker():
+#    # Setup queues for communicating with serial port thread
+#    command_queue = Queue()
+#    response_queue = Queue()
+#    
+#    # Setup and start serial port manager thread.
+#    # Port: Linux using FTDI USB adaptor; '/dev/ttyUSB0' should be OK.
+#    #       Linux using rPi GPIO Rx/Tx pins; '/dev/ttyAMA0'
+#    #       Windows using USB adaptor or serial port; 'COM1', 'COM2', etc.
+#    serial_port = SerialManager('/dev/ttyUSB0',
+#                                command_queue, response_queue)
+#    serial_port.start()
+
+
+#@celery.task()
+#def temp_logger():
+#    # Setup temp logging thread
+#    temp_logger = TempLogger(60, cwd,
+#                             command_queue, response_queue)
+#    # Start temp logger thread
+#    temp_logger.start()
+
 
 @app.before_request
 def before_request():
@@ -242,22 +246,12 @@ def page_not_found(error):
     return render_template('page_not_found.html'), 404
 
 
-def make_celery(app):
-    celery = Celery(app.import_name,
-                    backend=app.config['CELERY_BACKEND'],
-                    broker=app.config['CELERY_BROKER_URL'])
-    celery.conf.update(app.config)
-    TaskBase = celery.Task
-    class ContextTask(TaskBase):
-        abstract = True
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return TaskBase.__call__(self, *args, **kwargs)
-    celery.Task = ContextTask
-    return celery
-
-
 if __name__ == '__main__':
+
+    return_val = handle_command('test')
+    print(return_val.get(blocking=True))
+    logging.info('############### huey task result: %s ###############', return_val.get(blocking=True))
+
     # Setup SSL certificate for Flask to use
     # context = ('ssl.crt', 'ssl.key')
     # ssl.key = RSA Private Key (Passphrase removed after creation so that
