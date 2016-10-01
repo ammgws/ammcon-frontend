@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{%- block head %}
+  {{ super() }} {# Render the default head contents #}
+  <script src="{{ url_for('static', filename='ammcon_general.js') }}"></script>
+{%- endblock head %}
+
+{%- block content %}
+<div data-role="page" data-theme="b">
+  <div data-role="header">
+    <h1>AmmCon</h1>
+  </div>
+
+  <p> Page not found! </p>
+    
+  </div>
+</div>
+{% endblock content %}
+
+

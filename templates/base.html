@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+  <head>
+    {%- block head %}
+    <title>AmmCon</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    {#- Normalise CSS, see http://necolas.github.io/normalize.css/ #}
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='normalize.css') }}">
+    {# Load JQuery Mobile CSS #}
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.css">
+    {#- https://fonts.google.com/specimen/Roboto?selection.family=Roboto:400,500&query=roboto #}
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500" rel="stylesheet">
+    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+    {# Load jQuery framework from Google, see https://developers.google.com/speed/libraries/ -#}
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.js"></script>
+    <script type="text/javascript">
+      var $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+    </script>
+    <!-- favicons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon-32x32.png') }}" sizes="32x32">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon-16x16.png') }}" sizes="16x16">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="mask-icon" href="{{ url_for('static', filename='safari-pinned-tab.svg') }}" color="#5bbad5">
+    <link rel="theme-color" href="{{ url_for('static', filename='safari-pinned-tab.svg') }}" content="#b900bd">
+    {% endblock head %}
+  </head>
+  <body>
+    {% block content %}{% endblock content %}
+  </body>
+</html>
