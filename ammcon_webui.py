@@ -6,19 +6,19 @@ import logging
 import logging.handlers
 import os.path
 from os import urandom  # pylint: disable=C0412
+from queue import Queue  # pylint: disable=C0411
 from sys import path
 # Third party imports
-# from celery import Celery
 from flask import Flask, flash, json, redirect, render_template, request, url_for
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from flask_sqlalchemy import SQLAlchemy
 # Ammcon imports
-from auth import OAuthSignIn
 import h_bytecmds as PCMD
 import helpers
-from huey_config import huey  # import our "huey" object
-from huey_worker import handle_command  # import our task
-
+from auth import OAuthSignIn
+# from hangoutsclient import HangoutsClient
+from serialmanager import SerialManager
+from templogger import TempLogger
 
 # Flask configuration
 app = Flask(__name__, template_folder='templates')
@@ -27,19 +27,6 @@ app.config.from_object('config')
 # This key is used to sign sessions (i.e. cookies), but is also needed for
 # Flask's "flash" to work.
 app.secret_key = urandom(24)
-
-# Celery configuration - to implement later after figuring out best practice
-# celery = Celery(app.name,
-#                backend=app.config['CELERY_BACKEND'],
-#                broker=app.config['CELERY_BROKER_URL'])
-# celery.conf.update(app.config)
-# TaskBase = celery.Task
-# class ContextTask(TaskBase):
-#    abstract = True
-#    def __call__(self, *args, **kwargs):
-#        with app.app_context():
-#            return TaskBase.__call__(self, *args, **kwargs)
-# celery.Task = ContextTask
 
 # SQLAlchemy configuration
 if os.environ.get('DATABASE_URL') is None:
@@ -51,6 +38,7 @@ db = SQLAlchemy(app)
 # Flask-Login configuration
 lm = LoginManager(app)
 lm.login_view = 'login'  # Rediret non-logged in users to this view
+lm.login_message = 'You must login to access AmmCon.'
 lm.session_protection = "strong"
 
 
@@ -74,6 +62,37 @@ log_handler.setFormatter(log_format)
 logger.addHandler(log_handler)
 # Lower requests module's log level so that OAUTH2 details aren't logged
 logging.getLogger('requests').setLevel(logging.WARNING)
+# Quieten SleekXMPP output
+# logging.getLogger('sleekxmpp.xmlstream.xmlstream').setLevel(logging.INFO)
+logging.info('############### Starting Ammcon ###############')
+
+# Setup queues for communicating with serial port thread
+command_queue = Queue()
+response_queue = Queue()
+
+# Setup and start serial port manager thread.
+# Port: Linux using FTDI USB adaptor; '/dev/ttyUSB0' should be OK.
+#       Linux using rPi GPIO Rx/Tx pins; '/dev/ttyAMA0'
+#       Windows using USB adaptor or serial port; 'COM1', 'COM2', etc.
+serial_port = SerialManager('/dev/ttyUSB0',
+                            command_queue, response_queue)
+serial_port.start()
+
+# Setup temp logging thread
+temp_logger = TempLogger(60, cwd,
+                         command_queue, response_queue)
+# Start temp logger thread
+temp_logger.start()
+
+# Setup Hangouts client instance
+# hangouts = HangoutsClient('ammcon_config.ini',
+#                            command_queue, response_queue)
+# Connect to Hangouts and start processing XMPP stanzas.
+# if hangouts.connect(address=('talk.google.com', 5222),
+#                      reattempt=True, use_tls=True):
+#     hangouts.process(block=False)
+# else:
+#     logging.error('Unable to connect to Hangouts.')
 
 # Create SQLAlchemy database file if it does not already exist.
 db.create_all()
@@ -105,28 +124,33 @@ def index():
 
 
 @app.route('/command', methods=['GET', 'POST'])
-@login_required
 def run_command():
-    command = request.args.get('command', '', type=str)
+    # Redirect back to login page if session expired or unauthorised
+    # Cannot use @login_required since commands are sent using AJAX and
+    # redirects cannot be detected clientside.
+    if not current_user.is_authenticated:
+        return json.dumps({'redirect': url_for('login')})
+
+    command_text = request.args.get('command', '', type=str)
     logging.debug('[WebUI] Command "%s" received. '
-                  'Sending to command queue for processing...', command)
-    command = PCMD.micro_commands.get(command, "invalid")
-    command_task = handle_command(command)
-    response = command_task.get(blocking=True)
-    # if/when using celery:
-    # response = get_cmd_response.delay(command)
+                  'Sending to command queue for processing...', command_text)
+    command = PCMD.micro_commands.get(command_text, "invalid")
+    command_queue.put(command)
+    response = response_queue.get()  # blocks until response is found
     logging.debug('[WebUI] Received reply into response queue. '
                   'Reply received: %s', helpers.print_bytearray(response))
 
-    # To do: fix up all these kludges. Decide on universal response format #
+    # To do: fix up all these kludges. Decide on universal response format
 
     if response is None:
         response = 'EMPTY'
-    elif command.startswith('temp'):
+    elif command_text.startswith('temp'):
         temp, humidity = helpers.temp_val(response)
         response = '{0}{1}\n{2}%'.format(temp,
                                          u'\N{DEGREE CELSIUS}',
                                          humidity)
+    elif command_text == 'htpc wol':
+        response = helpers.send_magic_packet('BC:5F:F4:FA:85:DB')
     elif bytes([response[1]]) == PCMD.nak:
         response = 'NAK'
     elif bytes([response[1]]) == PCMD.ack:
@@ -134,49 +158,11 @@ def run_command():
     else:
         response = 'UNKNOWN'
 
-    if command == 'htpc wol':
-        response = helpers.send_magic_packet('BC:5F:F4:FA:85:DB')
+    current_date_time = dt.datetime.now()
+    date_time_str = current_date_time.strftime('%Y-%m-%d %H:%M')
 
-    return json.dumps({'response': response})
-
-
-#@celery.task()
-#def get_cmd_response():
-#    response = response_queue.get()  # blocks until response is found
-#    # response.wait()
-#    return response
-
-
-#@celery.task()
-#def serial_port_worker():
-#    # Setup queues for communicating with serial port thread
-#    command_queue = Queue()
-#    response_queue = Queue()
-#    
-#    # Setup and start serial port manager thread.
-#    # Port: Linux using FTDI USB adaptor; '/dev/ttyUSB0' should be OK.
-#    #       Linux using rPi GPIO Rx/Tx pins; '/dev/ttyAMA0'
-#    #       Windows using USB adaptor or serial port; 'COM1', 'COM2', etc.
-#    serial_port = SerialManager('/dev/ttyUSB0',
-#                                command_queue, response_queue)
-#    serial_port.start()
-
-
-#@celery.task()
-#def temp_logger():
-#    # Setup temp logging thread
-#    temp_logger = TempLogger(60, cwd,
-#                             command_queue, response_queue)
-#    # Start temp logger thread
-#    temp_logger.start()
-
-
-@app.before_request
-def before_request():
-    if request.url.startswith('http://'):
-        url = request.url.replace('http://', 'https://', 1)
-        code = 301
-        return redirect(url, code=code)
+    return json.dumps({'response': response,
+                       'time': date_time_str})
 
 
 @app.route('/authorize/<provider>')
@@ -222,7 +208,7 @@ def oauth_callback(provider):
 
 
 def allowed_email(email):
-    if email in app.config('ALLOWED_EMAILS'):
+    if email in app.config['ALLOWED_EMAILS']:
         return True
     return False
 
@@ -235,6 +221,7 @@ def login():
 
 
 @app.route('/logout')
+@login_required
 def logout():
     logout_user()
     return redirect(url_for('login'))
@@ -248,10 +235,6 @@ def page_not_found(error):
 
 if __name__ == '__main__':
 
-    return_val = handle_command('test')
-    print(return_val.get(blocking=True))
-    logging.info('############### huey task result: %s ###############', return_val.get(blocking=True))
-
     # Setup SSL certificate for Flask to use
     # context = ('ssl.crt', 'ssl.key')
     # ssl.key = RSA Private Key (Passphrase removed after creation so that
@@ -261,7 +244,6 @@ if __name__ == '__main__':
     # and stored in a PEM format so that it is readable as ASCII text.
     #
     # ssl.crt = certificate self-signed using the above key.
-    #
     # 1. Generate SSL key with passphrase: openssl genrsa -des3 -out ssl.key 1024
     # 2. Generate CSR (Certificate Signing Request): openssl req -new -key ssl.key -out ssl.csr
     # 3. Remove passphrase from key: cp ssl.key ssl.key.original

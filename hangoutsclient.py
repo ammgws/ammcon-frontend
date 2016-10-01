@@ -33,7 +33,7 @@ class HangoutsClient(ClientXMPP):
     # 11 instance variables seems OK to me in this case
 
     def __init__(self, config_path, command_queue, response_queue):
-        # Read in Ammcon config values
+        # Read in config values
         self.config = ConfigParser()
         self.config.read(config_path)
         self.config_path = config_path
