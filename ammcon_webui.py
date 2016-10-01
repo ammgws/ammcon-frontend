@@ -6,19 +6,18 @@ import logging
 import logging.handlers
 import os.path
 from os import urandom  # pylint: disable=C0412
-from queue import Queue  # pylint: disable=C0411
 from sys import path
 # Third party imports
-from flask import Flask, flash, json, redirect, render_template, request, url_for
-from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
+import zmq
+from flask import (Flask, flash, json, redirect, render_template, request,
+                   url_for)
+from flask_login import (LoginManager, UserMixin, login_user, logout_user,
+                         current_user, login_required)
 from flask_sqlalchemy import SQLAlchemy
 # Ammcon imports
 import h_bytecmds as PCMD
 import helpers
 from auth import OAuthSignIn
-# from hangoutsclient import HangoutsClient
-from serialmanager import SerialManager
-from templogger import TempLogger
 
 # Flask configuration
 app = Flask(__name__, template_folder='templates')
@@ -46,6 +45,11 @@ lm.session_protection = "strong"
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# Connect to zeroMQ REQ socket
+context = zmq.Context()
+socket = context.socket(zmq.REQ)
+socket.connect("tcp://localhost:5555")
+
 # Get absolute path of the dir script is run from
 cwd = path[0]  # pylint: disable=C0103
 
@@ -66,39 +70,12 @@ logging.getLogger('requests').setLevel(logging.WARNING)
 # logging.getLogger('sleekxmpp.xmlstream.xmlstream').setLevel(logging.INFO)
 logging.info('############### Starting Ammcon ###############')
 
-# Setup queues for communicating with serial port thread
-command_queue = Queue()
-response_queue = Queue()
-
-# Setup and start serial port manager thread.
-# Port: Linux using FTDI USB adaptor; '/dev/ttyUSB0' should be OK.
-#       Linux using rPi GPIO Rx/Tx pins; '/dev/ttyAMA0'
-#       Windows using USB adaptor or serial port; 'COM1', 'COM2', etc.
-serial_port = SerialManager('/dev/ttyUSB0',
-                            command_queue, response_queue)
-serial_port.start()
-
-# Setup temp logging thread
-temp_logger = TempLogger(60, cwd,
-                         command_queue, response_queue)
-# Start temp logger thread
-temp_logger.start()
-
-# Setup Hangouts client instance
-# hangouts = HangoutsClient('ammcon_config.ini',
-#                            command_queue, response_queue)
-# Connect to Hangouts and start processing XMPP stanzas.
-# if hangouts.connect(address=('talk.google.com', 5222),
-#                      reattempt=True, use_tls=True):
-#     hangouts.process(block=False)
-# else:
-#     logging.error('Unable to connect to Hangouts.')
-
 # Create SQLAlchemy database file if it does not already exist.
 db.create_all()
 
 
 class User(UserMixin, db.Model):
+    ''' Defines 'User' database structure to use with SQLAlchemy.'''
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(64), nullable=False, unique=True)
@@ -108,6 +85,7 @@ class User(UserMixin, db.Model):
 @app.route('/')
 @login_required
 def index():
+    ''' Main page for Ammcon.'''
     current_date_time = dt.datetime.now()
     date_time_str = current_date_time.strftime('%Y-%m-%d %H:%M')
 
@@ -125,6 +103,8 @@ def index():
 
 @app.route('/command', methods=['GET', 'POST'])
 def run_command():
+    ''' Get command from web UI, and if valid send it off to the micro.'''
+
     # Redirect back to login page if session expired or unauthorised
     # Cannot use @login_required since commands are sent using AJAX and
     # redirects cannot be detected clientside.
@@ -132,15 +112,14 @@ def run_command():
         return json.dumps({'redirect': url_for('login')})
 
     command_text = request.args.get('command', '', type=str)
-    logging.debug('[WebUI] Command "%s" received. '
-                  'Sending to command queue for processing...', command_text)
+    logging.debug('Command "%s" received. '
+                  'Sending off for processing...', command_text)
     command = PCMD.micro_commands.get(command_text, "invalid")
-    command_queue.put(command)
-    response = response_queue.get()  # blocks until response is found
-    logging.debug('[WebUI] Received reply into response queue. '
-                  'Reply received: %s', helpers.print_bytearray(response))
+    socket.send(command)
+    response = socket.recv()  # blocks until response is found
+    logging.debug('Response received: %s', helpers.print_bytearray(response))
 
-    # To do: fix up all these kludges. Decide on universal response format
+    # To do: fix up all these kludges. Decide on universal response format.
 
     if response is None:
         response = 'EMPTY'
@@ -167,6 +146,7 @@ def run_command():
 
 @app.route('/authorize/<provider>')
 def oauth_authorize(provider):
+    ''' OAUTH authorization flow. '''
     # Redirect user to main page if already logged in.
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -176,6 +156,7 @@ def oauth_authorize(provider):
 
 @app.route('/callback/<provider>')
 def oauth_callback(provider):
+    ''' Sign in using OAUTH, and redirect back to main page. '''
     # Redirect user to main page if already logged in.
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -208,6 +189,7 @@ def oauth_callback(provider):
 
 
 def allowed_email(email):
+    ''' Check if the email used to sign in is an allowed user of Ammcon. '''
     if email in app.config['ALLOWED_EMAILS']:
         return True
     return False
@@ -229,7 +211,7 @@ def logout():
 
 @app.errorhandler(404)
 def page_not_found(error):
-    logging.warning('[WebUI] Page not found: %s (Error message = %s)', (request.path), error)
+    logging.warning('Page not found: %s (Error message = %s)', (request.path), error)
     return render_template('page_not_found.html'), 404
 
 
@@ -253,7 +235,7 @@ if __name__ == '__main__':
     #                                                  chown root:ssl-cert (only members of 'ssl-cert' user group can access)
     # OR
     # Use LetsEncrpyt/certbot to generate trusted certificate
-    context = ('kayoway_com.crt', 'kayoway_com.key')
+    ssl_context = ('kayoway_com.crt', 'kayoway_com.key')
 
     # Turning debug mode on (during development) seems to cause issues with AmmCon,
     # so explicitly set to False as a reminder (Flask default is False)
@@ -266,4 +248,4 @@ if __name__ == '__main__':
     # (Probably a sign that the code as is will not run correctly when managed by nginx etc)
     # Also setting reloader to false as well (though it should be if debug is off), see:
     # http://stackoverflow.com/questions/9276078/whats-the-right-approach-for-calling-functions-after-a-flask-app-is-run?rq=1
-    app.run(host='0.0.0.0', port=8058, ssl_context=context, debug=False, use_reloader=False)
+    app.run(host='0.0.0.0', port=8058, ssl_context=ssl_context, debug=False, use_reloader=False)
