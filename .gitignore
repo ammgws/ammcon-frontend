@@ -214,4 +214,11 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
-*.ini
+
+#Ammcon
+ammcon_config.ini
+config.py
+gunicorn_cfg.py
+*.crt
+*.key
+_temp_/
