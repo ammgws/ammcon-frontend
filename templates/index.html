@@ -1,0 +1,132 @@
+{% extends "base.html" -%}
+
+{%- block head -%}
+  {{ super() }} {# Render the default head contents #}
+  <script src="{{ url_for('static', filename='ammcon_special.js') }}"></script>
+{%- endblock head %}
+
+{% block content -%}
+<div data-role="page" data-theme="b">
+  <div data-role="header">
+    <h1>AmmCon Main Page</h1>
+  </div>
+
+  <div data-role="content">	
+    <p>Welcome, {{ current_user.nickname }}!
+    <br>
+    <a href="{{ url_for('logout') }}">Logout from {{ current_user.email }}</a>
+    </p>
+  <div class="layout">
+    <img class="layout_bg" src="{{ url_for('static', filename='apartment_layout.png') }}">
+    <a href="#living_light1_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="living_light1" src="{{ url_for('static', filename='light.png') }}"></a>
+    <a href="#living_light2_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="living_light2" src="{{ url_for('static', filename='light.png') }}"></a>
+    <a href="#bedroom1_light_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="bedroom1_light" src="{{ url_for('static', filename='light.png') }}"></a>
+    <a href="#bedroom2_light_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="bedroom2_light" src="{{ url_for('static', filename='light.png') }}"></a>
+    <a href="#bedroom3_light_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="bedroom3_light" src="{{ url_for('static', filename='light.png') }}"></a>
+    <a href="#living_aircon_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="living_aircon" src="{{ url_for('static', filename='aircon.png') }}"></a>
+    <a href="#bedroom2_aircon_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="bedroom2_aircon" src="{{ url_for('static', filename='aircon.png') }}"></a>
+    <a href="#bedroom3_aircon_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="bedroom3_aircon" src="{{ url_for('static', filename='aircon.png') }}"></a>
+    <a href="#tv_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="living_tv" src="{{ url_for('static', filename='tv.png') }}"></a>
+    <p class="temp" id="templiving">Temp:</p>
+    <p class="temp" id="tempbedroom2">Temp:</p>
+    <p class="temp" id="tempbedroom3">Temp:</p>
+  </div>
+
+  <div data-role="popup" id="living_light1_menu" data-theme="b">
+  <ul data-role="listview" data-inset="true" style="min-width:210px;">
+    <li data-role="list-divider">Living Room Light #1</li>
+    <li yip="#living_light1_menu" class="commands" value="living1 off"><a href="#">Off</a></li>
+    <li yip="#living_light1_menu" class="commands" value="living1 on"><a href="#">On</a></li>
+    <li yip="#living_light1_menu" class="commands" value="living1 low"><a href="#">Low</a></li>
+    <li yip="#living_light1_menu" class="commands" value="living1 night"><a href="#">Nightlight</a></li>
+    <li yip="#living_light1_menu" class="commands" value="living off"><a href="#">All Off</a></li>
+    <li yip="#living_light1_menu" class="commands" value="living on"><a href="#">All On</a></li>
+  </ul>
+  </div>
+  <div data-role="popup" id="living_light2_menu" data-theme="b">
+  <ul data-role="listview" data-inset="true" style="min-width:210px;">
+    <li data-role="list-divider">Living Room Light #2</li>
+    <li yip="#living_light2_menu" class="commands" value="living2 off"><a href="#">Off</a></li>
+    <li yip="#living_light2_menu" class="commands" value="living2 on"><a href="#">On</a></li>
+    <li yip="#living_light2_menu" class="commands" value="living2 low"><a href="#">Low</a></li>
+    <li yip="#living_light2_menu" class="commands" value="living2 night"><a href="#">Nightlight</a></li>
+    <li yip="#living_light1_menu" class="commands" value="living off"><a href="#">All Off</a></li>
+    <li yip="#living_light1_menu" class="commands" value="living on"><a href="#">All On</a></li>
+  </ul>
+  </div>
+  <div data-role="popup" id="living_aircon_menu" data-theme="b">
+  <ul data-role="listview" data-inset="true" style="min-width:210px;">
+    <li data-role="list-divider">Living Room Aircon</li>
+    <li yip="#living_aircon_menu" class="commands" value="AC off"><a href="#">Off</a></li>
+    <li yip="#living_aircon_menu" class="commands" value="AC auto"><a href="#">Auto</a></li>
+  </ul>
+  </div>
+  <div data-role="popup" id="bedroom2_aircon_menu" data-theme="b">
+  <ul data-role="listview" data-inset="true" style="min-width:210px;">
+    <li data-role="list-divider">Bedroom2 Aircon</li>
+    <li yip="#bedroom2_aircon_menu" class="commands" value="AC off"><a href="#">Off</a></li>
+    <li yip="#bedroom2_aircon_menu" class="commands" value="AC auto"><a href="#">Auto</a></li>
+  </ul>
+  </div>
+  <div data-role="popup" id="bedroom3_aircon_menu" data-theme="b">
+  <ul data-role="listview" data-inset="true" style="min-width:210px;">
+    <li data-role="list-divider">Bedroom3 Aircon</li>
+    <li yip="#bedroom3_aircon_menu" class="commands" value="AC off"><a href="#">Off</a></li>
+    <li yip="#bedroom3_aircon_menu" class="commands" value="AC auto"><a href="#">Auto</a></li>
+  </ul>
+  </div>
+  <div data-role="popup" id="bedroom1_light_menu" data-theme="b">
+  <ul data-role="listview" data-inset="true" style="min-width:210px;">
+    <li data-role="list-divider">Bedroom1 Light</li>
+    <li yip="#bedroom1_light_menu" class="commands" value="bedroom off"><a href="#">Off</a></li>
+    <li yip="#bedroom1_light_menu" class="commands" value="bedroom on"><a href="#">On</a></li>
+    <li yip="#bedroom1_light_menu" class="commands" value="bedroom full"><a href="#">Full</a></li>
+    <li yip="#bedroom1_light_menu" class="commands" value="bedroom night"><a href="#">Nightlight</a></li>
+    <li yip="#bedroom1_light_menu" class="commands" value="bedroom down"><a href="#">Dim</a></li>
+    <li yip="#bedroom1_light_menu" class="commands" value="bedroom up"><a href="#">Brighten</a></li>
+  </ul>
+  </div>
+  <div data-role="popup" id="bedroom2_light_menu" data-theme="b">
+  <ul data-role="listview" data-inset="true" style="min-width:210px;">
+    <li data-role="list-divider">Bedroom2 Light</li>
+    <li yip="#bedroom1_light_menu" class="commands" value="kayoroom off"><a href="#">Off</a></li>
+    <li yip="#bedroom1_light_menu" class="commands" value="kayoroom on"><a href="#">On</a></li>
+    <li yip="#bedroom1_light_menu" class="commands" value="kayoroom full"><a href="#">Full</a></li>
+    <li yip="#bedroom1_light_menu" class="commands" value="kayoroom night"><a href="#">Nightlight</a></li>
+    <li yip="#bedroom1_light_menu" class="commands" value="kayoroom down"><a href="#">Dim</a></li>
+    <li yip="#bedroom1_light_menu" class="commands" value="kayoroom up"><a href="#">Brighten</a></li>
+  </ul>
+  </div>
+  <div data-role="popup" id="bedroom3_light_menu" data-theme="b">
+  <ul data-role="listview" data-inset="true" style="min-width:210px;">
+    <li data-role="list-divider">Bedroom3 Light</li>
+    <li yip="#bedroom1_light_menu" class="commands" value="myroom off"><a href="#">Off</a></li>
+    <li yip="#bedroom1_light_menu" class="commands" value="myroom on"><a href="#">On</a></li>
+    <li yip="#bedroom1_light_menu" class="commands" value="myroom full"><a href="#">Full</a></li>
+    <li yip="#bedroom1_light_menu" class="commands" value="myroom night"><a href="#">Nightlight</a></li>
+    <li yip="#bedroom1_light_menu" class="commands" value="myroom down"><a href="#">Dim</a></li>
+    <li yip="#bedroom1_light_menu" class="commands" value="myroom up"><a href="#">Brighten</a></li>
+  </ul>
+  </div>
+  <div data-role="popup" id="tv_menu" data-theme="b">
+  <ul data-role="listview" data-inset="true" style="min-width:210px;">
+    <li data-role="list-divider">Living Room TV</li>
+    <li yip="#tv_menu" class="commands" value="htpc wol"><a href="#">HTPC On</a></li>
+    <li yip="#tv_menu" class="commands" value="tv off"><a href="#">Off</a></li>
+    <li yip="#tv_menu" class="commands" value="tv on"><a href="#">On</a></li>
+    <li yip="#tv_menu" class="commands" value="tv mute"><a href="#">Mute</a></li>
+  </ul>
+  </div>
+  <p>Server response: <span id="response">???</span></p>
+
+  </div>
+
+  <div data-role="footer">
+    <h4>System date: {{ date_time }}
+    <br />
+    System uptime: {{ uptime }}</h4>
+  </div>
+
+</div>
+
+{%- endblock content %}
