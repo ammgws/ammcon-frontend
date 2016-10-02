@@ -59,7 +59,7 @@ log_handler = logging.handlers.RotatingFileHandler(os.path.join(log_folder, log_
 log_format = logging.Formatter(fmt='%(asctime)s.%(msecs).03d %(name)-12s %(levelname)-8s %(message)s (%(filename)s:%(lineno)d)',
                                datefmt='%Y-%m-%d %H:%M:%S')
 log_handler.setFormatter(log_format)
-app.addHandler(log_handler)
+app.logger.addHandler(log_handler)
 app.logger.setLevel(level=app.config['LOG_LEVEL'])
 app.logger.info('############### Starting Ammcon Web UI ###############')
 
