@@ -5,13 +5,13 @@
 # Imports from Python Standard Library
 import datetime as dt
 import logging
+import ssl
+from configparser import ConfigParser
 from sys import path
 from urllib.parse import urlencode
 
 # Third party imports
-from configparser import ConfigParser
 import requests
-import ssl
 from sleekxmpp import ClientXMPP
 from sleekxmpp.exceptions import IqError, IqTimeout
 from sleekxmpp.xmlstream import cert
