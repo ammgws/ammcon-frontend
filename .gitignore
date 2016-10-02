@@ -216,9 +216,9 @@ pip-log.txt
 .mr.developer.cfg
 
 #Ammcon
-ammcon_config.ini
-config.py
-gunicorn_cfg.py
+*config.ini
+*config.py
+*cfg.py
 *.crt
 *.key
 _temp_/

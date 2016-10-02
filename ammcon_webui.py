@@ -21,7 +21,7 @@ from auth import OAuthSignIn
 
 # Flask configuration
 app = Flask(__name__, template_folder='templates')
-app.config.from_object('config')
+app.config.from_object('flask_config')
 # Generate secret key using the operating system's RNG.
 # This key is used to sign sessions (i.e. cookies), but is also needed for
 # Flask's "flash" to work.
@@ -216,36 +216,8 @@ def page_not_found(error):
 
 
 if __name__ == '__main__':
-
     # Setup SSL certificate for Flask to use
-    # context = ('ssl.crt', 'ssl.key')
-    # ssl.key = RSA Private Key (Passphrase removed after creation so that
-    # we aren't prompted for passphrase everytime server is restarted - note
-    # that this means Triple-DES encryption is removed from the final file.)
-    # Using a 1024 bit RSA key encrypted using Triple-DES (on first creation),
-    # and stored in a PEM format so that it is readable as ASCII text.
-    #
-    # ssl.crt = certificate self-signed using the above key.
-    # 1. Generate SSL key with passphrase: openssl genrsa -des3 -out ssl.key 1024
-    # 2. Generate CSR (Certificate Signing Request): openssl req -new -key ssl.key -out ssl.csr
-    # 3. Remove passphrase from key: cp ssl.key ssl.key.original
-    #                                openssl rsa -in ssl.key.original -out ssl.key
-    # 4. Generate self-signed cert: openssl x509 -req -days 365 -in ssl.csr -signkey ssl.key -out ssl.crt
-    # 5. Set file permissions for the unencrypted key: chmod 640 ssl.key
-    #                                                  chown root:ssl-cert (only members of 'ssl-cert' user group can access)
-    # OR
-    # Use LetsEncrpyt/certbot to generate trusted certificate
     ssl_context = ('kayoway_com.crt', 'kayoway_com.key')
 
-    # Turning debug mode on (during development) seems to cause issues with AmmCon,
-    # so explicitly set to False as a reminder (Flask default is False)
-    # Test: set debug to True and set temp logger interval to 1sec and it will
-    # act strange, almost as if multiple threads are accessing serial port
-    # (program flow not as expected, commands being sent twice in a row before
-    # the previous command is processed, etc).
-    # When debug is False everything operates as expected.
-    # Would like to delve more into this but need to develop other parts first.
-    # (Probably a sign that the code as is will not run correctly when managed by nginx etc)
-    # Also setting reloader to false as well (though it should be if debug is off), see:
-    # http://stackoverflow.com/questions/9276078/whats-the-right-approach-for-calling-functions-after-a-flask-app-is-run?rq=1
+    # Run Flask app using Flask development server
     app.run(host='0.0.0.0', port=8058, ssl_context=ssl_context, debug=False, use_reloader=False)
