@@ -5,8 +5,8 @@ import logging
 from threading import Thread
 from time import sleep
 # Third party imports
-import zmq
 import serial
+import zmq
 from crccheck.crc import Crc
 # Ammcon imports
 import h_bytecmds as PCMD
@@ -58,28 +58,24 @@ class SerialManager(Thread):
     def run(self):
         # Keep looping, waiting for next request from zeromq client
         while True:
-            #  Wait for next request from client
+            # Wait for next request from client
             command = self.socket.recv()
+            logging.debug('Received command in queue: %s', command)
 
-            response = None
-            if command is 'invalid':
-                logging.debug('Received invalid command in queue - do nothing.')
-            else:
-                logging.debug('Received command in queue: %s', command)
-                # Send command to microcontroller
-                self.send_command(command)
+            # Send command to microcontroller
+            self.send_command(command)
 
-                # sleep(0.3)  # debugging empty response issue. shouldn't need this
+            # sleep(0.3)  # debugging empty response issue. shouldn't need this
 
-                # Read in response from microcontroller
-                # raw_response = self.get_response()  # unreliable
-                raw_response = self.get_response_until(PCMD.end)  # may block forever
-                response = self.destuff_response(raw_response)
+            # Read in response from microcontroller
+            # raw_response = self.get_response()  # unreliable
+            raw_response = self.get_response_until(PCMD.end)  # may block forever
+            response = self.destuff_response(raw_response)
 
-                # Check CRC of destuffed command
-                if not self.check_crc(response):
-                    logging.debug('Invalid CRC')
-                    response = None
+            # Check CRC of destuffed command
+            if not self.check_crc(response):
+                logging.debug('Invalid CRC')
+                response = None
 
             #  Send response back to client
             self.socket.send(response)

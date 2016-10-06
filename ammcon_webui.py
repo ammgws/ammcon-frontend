@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+'''
+Ammcon is a personal home automation project. This file provides the web UI.
+.. module:: ammcon
+   :platform: Unix
+   :synopsis: Ammcon main module.
+.. moduleauthor:: ammgws
+'''
 
 # Imports from Python Standard Library
 import datetime as dt
@@ -9,7 +16,7 @@ from os import urandom  # pylint: disable=C0412
 # Third party imports
 import zmq
 from flask import (Flask, flash, json, redirect, render_template, request,
-                   url_for)
+                   session, url_for)
 from flask_login import (LoginManager, UserMixin, login_user, logout_user,
                          current_user, login_required)
 from flask_sqlalchemy import SQLAlchemy
@@ -33,46 +40,48 @@ if os.environ.get('DATABASE_URL') is None:
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
 db = SQLAlchemy(app)  # create a SQLAlchemy db object from our app object
-
-# Flask-Login configuration
-lm = LoginManager(app)  # create a LoginManager object from our app object
-lm.login_view = 'login'  # Rediret non-logged in users to this view
-lm.login_message = 'You must login to access AmmCon.'
-lm.session_protection = "strong"
-
-
-@lm.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-# Connect to zeroMQ REQ socket, used to communicate with serial port
-context = zmq.Context()
-socket = context.socket(zmq.REQ)
-socket.connect("tcp://localhost:5555")
-
-# Configure logger
-log_folder = app.config['LOG_FOLDER']
-log_filename = 'ammcon_{0}.log'.format(dt.datetime.now().strftime("%Y%m%d_%Hh%Mm%Ss"))
-log_handler = logging.handlers.RotatingFileHandler(os.path.join(log_folder, log_filename),
-                                                   maxBytes=5242880,
-                                                   backupCount=3)
-log_format = logging.Formatter(fmt='%(asctime)s.%(msecs).03d %(name)-12s %(levelname)-8s %(message)s (%(filename)s:%(lineno)d)',
-                               datefmt='%Y-%m-%d %H:%M:%S')
-log_handler.setFormatter(log_format)
-app.logger.addHandler(log_handler)
-app.logger.setLevel(level=app.config['LOG_LEVEL'])
-app.logger.info('############### Starting Ammcon Web UI ###############')
-
 # Create SQLAlchemy database file if it does not already exist.
 db.create_all()
 
-
 class User(UserMixin, db.Model):
-    ''' Defines 'User' database structure to use with SQLAlchemy.'''
+    ''' Defines 'User' database model to use with SQLAlchemy.'''
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(64), nullable=False, unique=True)
     nickname = db.Column(db.String(64), nullable=False)
+
+# Flask-Login configuration
+lm = LoginManager(app)  # create a LoginManager object from our app object
+lm.login_view = 'login'  # Redirect non-logged in users to this view
+lm.login_message = 'You must login to access AmmCon.'
+lm.session_protection = "none"  # Disable so that don't need to relogin when going from wifi to mobile and vice versa
+
+
+@lm.user_loader
+def load_user(user_id):
+    ''' User loader for SQLAlchemy. '''
+    return User.query.get(int(user_id))
+
+# Configure loggers
+log_format = logging.Formatter(fmt='%(asctime)s.%(msecs).03d %(name)-12s %(levelname)-8s %(message)s (%(filename)s:%(lineno)d)',
+                               datefmt='%Y-%m-%d %H:%M:%S')
+log_folder = app.config['LOG_FOLDER']
+log_filename = '_{0}.log'.format(dt.datetime.now().strftime("%Y%m%d_%Hh%Mm%Ss"))
+flask_log_handler = logging.handlers.RotatingFileHandler(os.path.join(log_folder, 'flask' + log_filename),
+                                                         maxBytes=5 * 1024 * 1024,
+                                                         backupCount=3)
+flask_log_handler.setFormatter(log_format)
+app.logger.addHandler(flask_log_handler)
+app.logger.setLevel(level=app.config['LOG_LEVEL'])
+app.logger.info('############### Starting Ammcon Web UI ###############')
+
+# Connect to zeroMQ REQ socket, used to communicate with serial port
+# to do: handle disconnections somehow (though if background serial worker
+# fails then we're screwed anyway)
+context = zmq.Context()
+socket = context.socket(zmq.REQ)
+socket.connect('tcp://localhost:5555')
+app.logger.info('############### Connected to zeroMQ server ###############')
 
 
 @app.route('/')
@@ -102,20 +111,24 @@ def run_command():
     # Cannot use @login_required since commands are sent using AJAX and
     # redirects cannot be detected clientside.
     if not current_user.is_authenticated:
+        app.logger.info('Received command request from unauthenticated user.')
         return json.dumps({'redirect': url_for('login')})
 
     command_text = request.args.get('command', '', type=str)
-    app.logger.debug('Command "%s" received. '
-                     'Sending off for processing...', command_text)
-    command = PCMD.micro_commands.get(command_text, "invalid")
-    socket.send(command)
-    response = socket.recv()  # blocks until response is found
-    app.logger.debug('Response received: %s', helpers.print_bytearray(response))
+    command = PCMD.micro_commands.get(command_text, None)
+    if command:
+        app.logger.info('Command "%s" received. '
+                        'Sending message: %s', command_text, command)
+        socket.send(command)
+        response = socket.recv()  # blocks until response is found
+        app.logger.info('Response received: %s', helpers.print_bytearray(response))
+    else:
+        response = None
+        app.logger.info('Invalid command. Do nothing')
 
     # To do: fix up all these kludges. Decide on universal response format.
-
     if response is None:
-        response = 'EMPTY'
+        response = 'INVALID'
     elif command_text.startswith('temp'):
         temp, humidity = helpers.temp_val(response)
         response = '{0}{1}\n{2}%'.format(temp,
@@ -131,7 +144,9 @@ def run_command():
         response = 'UNKNOWN'
 
     current_date_time = dt.datetime.now()
-    date_time_str = current_date_time.strftime('%Y-%m-%d %H:%M')
+    date_time_str = current_date_time.strftime('%Y-%m-%d %H:%M:%S')
+
+    app.logger.info('Finished handling command request.')
 
     return json.dumps({'response': response,
                        'time': date_time_str})
@@ -185,6 +200,8 @@ def allowed_email(email):
     ''' Check if the email used to sign in is an allowed user of Ammcon. '''
     if email in app.config['ALLOWED_EMAILS']:
         return True
+    else:
+        app.logger.info('Unauthorised user login attempt.')
     return False
 
 
@@ -203,6 +220,14 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+@app.before_request
+def make_session_permanent():
+    app.logger.debug('Set session to permanent before request.')
+    session.permanent = True
+
+@app.before_first_request
+def setup():
+    app.logger.debug('This is before first request')
 
 @app.errorhandler(404)
 def page_not_found(error):
@@ -213,6 +238,7 @@ def page_not_found(error):
 @app.errorhandler(400)
 def key_error(e):
     '''Handle invalid requests. Serves a generic error page.'''
+    # pass exception instance in exc_info argument
     app.logger.warning('Invalid request resulted in KeyError', exc_info=e)
     return render_template('error.html'), 400
 
@@ -231,7 +257,7 @@ def unhandled_exception(e):
     return render_template('error.html'), 500
 
 if __name__ == '__main__':
-    # Setup SSL certificate for Flask to use
+    # Setup SSL certificate for Flask to use when running the Flask dev server
     ssl_context = (app.config['SSL_CERT'], app.config['SSL_KEY'])
 
     # Run Flask app using Flask development server

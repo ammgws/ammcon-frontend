@@ -10,12 +10,13 @@ $(function() {
         //$(location).attr('href', data.redirect));
       }
       else {
+        // close popup first for better user experience?
+        $($(this).attr("yip")).popup("close");
         $("#response").text(data.response + '@' + data.time);
       }
     });
     // for debugging purposes:
     // alert($(this).attr("yip"))
-    $($(this).attr("yip")).popup("close");
     return false;
   });
 });
