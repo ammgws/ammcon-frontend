@@ -1,4 +1,4 @@
-// register click event handler on 'document ready'
+// registers this click event handler on 'document ready'
 /*
 $(function() {
     $("a#login").bind('click', function() {
