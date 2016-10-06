@@ -10,7 +10,7 @@ OAUTH_CREDENTIALS = { 'google': {'id': GOOGLE_LOGIN_CLIENT_ID,
 ALLOWED_EMAILS = ['email1@gmail.com',
                   'email2@gmail.com']
                   
-# SSL certificate filename
+# SSL certificate filename for using SSL when running using Flask development server
 SSL_CERT = 'xxx.crt'
 SSL_KEY = 'xxx.key'
 
@@ -18,3 +18,6 @@ SSL_KEY = 'xxx.key'
 LOG_LEVEL = 'DEBUG'
 # full path to folder to store logs in
 LOG_FOLDER = '/path/to/logs'
+
+# Cookies
+REMEMBER_COOKIE_SECURE = True  # Restricts the “Remember Me” cookie’s scope to HTTPS
