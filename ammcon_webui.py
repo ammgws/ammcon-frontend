@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-'''
+"""
 Ammcon is a personal home automation project. This file provides the web UI.
 .. module:: ammcon
    :platform: Unix
    :synopsis: Ammcon main module.
 .. moduleauthor:: ammgws
-'''
+"""
 
 # Imports from Python Standard Library
 import datetime as dt
-import logging
 import logging.handlers
 import os.path
 from os import urandom  # pylint: disable=C0412
@@ -43,12 +42,14 @@ db = SQLAlchemy(app)  # create a SQLAlchemy db object from our app object
 # Create SQLAlchemy database file if it does not already exist.
 db.create_all()
 
+
 class User(UserMixin, db.Model):
-    ''' Defines 'User' database model to use with SQLAlchemy.'''
+    """ Defines 'User' database model to use with SQLAlchemy."""
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(64), nullable=False, unique=True)
     nickname = db.Column(db.String(64), nullable=False)
+
 
 # Flask-Login configuration
 lm = LoginManager(app)  # create a LoginManager object from our app object
@@ -59,12 +60,14 @@ lm.session_protection = "none"  # Disable so that don't need to relogin when goi
 
 @lm.user_loader
 def load_user(user_id):
-    ''' User loader for SQLAlchemy. '''
+    """ User loader for SQLAlchemy. """
     return User.query.get(int(user_id))
 
+
 # Configure loggers
-log_format = logging.Formatter(fmt='%(asctime)s.%(msecs).03d %(name)-12s %(levelname)-8s %(message)s (%(filename)s:%(lineno)d)',
-                               datefmt='%Y-%m-%d %H:%M:%S')
+log_format = logging.Formatter(
+    fmt='%(asctime)s.%(msecs).03d %(name)-12s %(levelname)-8s %(message)s (%(filename)s:%(lineno)d)',
+    datefmt='%Y-%m-%d %H:%M:%S')
 log_folder = app.config['LOG_FOLDER']
 log_filename = '_{0}.log'.format(dt.datetime.now().strftime("%Y%m%d_%Hh%Mm%Ss"))
 flask_log_handler = logging.handlers.RotatingFileHandler(os.path.join(log_folder, 'flask' + log_filename),
@@ -87,7 +90,7 @@ app.logger.info('############### Connected to zeroMQ server ###############')
 @app.route('/')
 @login_required
 def index():
-    ''' Main page for Ammcon.'''
+    """ Main page for Ammcon."""
     current_date_time = dt.datetime.now()
     date_time_str = current_date_time.strftime('%Y-%m-%d %H:%M')
 
@@ -105,7 +108,7 @@ def index():
 
 @app.route('/command', methods=['GET', 'POST'])
 def run_command():
-    ''' Get command from web UI, and if valid send it off to the micro.'''
+    """ Get command from web UI, and if valid send it off to the micro."""
 
     # Redirect back to login page if session expired or unauthorised
     # Cannot use @login_required since commands are sent using AJAX and
@@ -135,7 +138,7 @@ def run_command():
                                          u'\N{DEGREE CELSIUS}',
                                          humidity)
     elif command_text == 'htpc wol':
-        response = helpers.send_magic_packet('BC:5F:F4:FA:85:DB')
+        response = helpers.send_magic_packet(app.config['MAC_ADDR'], app.config['BROADCAST_ADDR'])
     elif bytes([response[1]]) == PCMD.nak:
         response = 'NAK'
     elif bytes([response[1]]) == PCMD.ack:
@@ -154,7 +157,7 @@ def run_command():
 
 @app.route('/authorize/<provider>')
 def oauth_authorize(provider):
-    ''' OAUTH authorization flow. '''
+    """ OAUTH authorization flow. """
     # Redirect user to main page if already logged in.
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -164,7 +167,7 @@ def oauth_authorize(provider):
 
 @app.route('/callback/<provider>')
 def oauth_callback(provider):
-    ''' Sign in using OAUTH, and redirect back to main page. '''
+    """ Sign in using OAUTH, and redirect back to main page. """
     # Redirect user to main page if already logged in.
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -197,7 +200,7 @@ def oauth_callback(provider):
 
 
 def allowed_email(email):
-    ''' Check if the email used to sign in is an allowed user of Ammcon. '''
+    """ Check if the email used to sign in is an allowed user of Ammcon. """
     if email in app.config['ALLOWED_EMAILS']:
         return True
     else:
@@ -207,7 +210,7 @@ def allowed_email(email):
 
 @app.route('/login')
 def login():
-    '''Serve login page if not authenticated.'''
+    """Serve login page if not authenticated."""
     if current_user.is_authenticated:
         return redirect(url_for('index'))
     return render_template('login.html')
@@ -216,28 +219,32 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
-    '''Logout user and redirect to login page.'''
+    """Logout user and redirect to login page."""
     logout_user()
     return redirect(url_for('login'))
+
 
 @app.before_request
 def make_session_permanent():
     app.logger.debug('Set session to permanent before request.')
     session.permanent = True
 
+
 @app.before_first_request
 def setup():
     app.logger.debug('This is before first request')
 
+
 @app.errorhandler(404)
 def page_not_found(error):
-    '''Handle 404 errors. Only this error serves a non-generic page.'''
-    app.logger.warning('Page not found: %s (Error message = %s)', (request.path), error)
+    """Handle 404 errors. Only this error serves a non-generic page."""
+    app.logger.warning('Page not found: %s (Error message = %s)', request.path, error)
     return render_template('page_not_found.html'), 404
+
 
 @app.errorhandler(400)
 def key_error(e):
-    '''Handle invalid requests. Serves a generic error page.'''
+    """Handle invalid requests. Serves a generic error page."""
     # pass exception instance in exc_info argument
     app.logger.warning('Invalid request resulted in KeyError', exc_info=e)
     return render_template('error.html'), 400
@@ -245,16 +252,17 @@ def key_error(e):
 
 @app.errorhandler(500)
 def internal_server_error(e):
-    '''Handle internal server errors. Serves a generic error page.'''
+    """Handle internal server errors. Serves a generic error page."""
     app.logger.warning('An unhandled exception is being displayed to the end user', exc_info=e)
     return render_template('error.html'), 500
 
 
 @app.errorhandler(Exception)
 def unhandled_exception(e):
-    '''Handle all other errors that may occur. Serves a generic error page.'''
+    """Handle all other errors that may occur. Serves a generic error page."""
     app.logger.error('An unhandled exception is being displayed to the end user', exc_info=e)
     return render_template('error.html'), 500
+
 
 if __name__ == '__main__':
     # Setup SSL certificate for Flask to use when running the Flask dev server
