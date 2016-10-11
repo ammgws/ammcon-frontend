@@ -21,3 +21,7 @@ LOG_FOLDER = '/path/to/logs'
 
 # Cookies
 REMEMBER_COOKIE_SECURE = True  # Restricts the “Remember Me” cookie’s scope to HTTPS
+
+# HTPC WoL info TODO: move to proper file
+MAC_ADDR = 'FF:FF:FF:FF:FF:FF'
+BROADCAST_ADDR = '99.99.99.255'
