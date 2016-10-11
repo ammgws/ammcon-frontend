@@ -14,10 +14,10 @@ import helpers
 
 
 class SerialManager(Thread):
-    '''Class for handling intermediary communication between hardware connected
+    """Class for handling intermediary communication between hardware connected
     to the serial port and Python. By using queues to pass commands to/responses
     from the serial port, it can be shared between multiple Python threads, or
-    processes if changed to use multiprocessing module instead.'''
+    processes if changed to use multiprocessing module instead."""
 
     def __init__(self, port):
         Thread.__init__(self)
@@ -77,13 +77,14 @@ class SerialManager(Thread):
                 logging.debug('Invalid CRC')
                 response = None
 
-            #  Send response back to client
+            # Send response back to client
             self.socket.send(response)
 
     def read_byte(self):
-        '''
+        """
         Read one byte from serial port.
-        '''
+        """
+        read_byte = ''
         try:
             read_byte = self.ser.read(1)
         except serial.SerialException:
@@ -92,12 +93,12 @@ class SerialManager(Thread):
         return read_byte
 
     def get_response_until(self, end_flag):
-        '''
+        """
         Read from serial input buffer until end_flag byte is received.
         Note: for some reason pyserial's timeout doesn't work on these read
               commands (tested on Windows and Linux), so this may block forever
               if microcontroller doesn't response for whatever reason.
-        '''
+        """
         recvd_command = b''
         while True:
             in_byte = self.ser.read(size=1)
@@ -107,13 +108,13 @@ class SerialManager(Thread):
         return recvd_command
 
     def get_response(self):
-        '''
+        """
         Read in microcontroller response from serial input buffer.
         Note: have been having issues with in_waiting either returning 0 bytes
               but still being able to read using something like read(10), or
               in_waiting returning 0 bytes due to returning too fast before
               the microcontroller can respond.
-        '''
+        """
 
         recvd_command = b''
         # Save value rather than calling in_waiting in the while loop, otherwise
@@ -123,16 +124,16 @@ class SerialManager(Thread):
         logging.debug('Bytes in serial input buffer: %s', bytes_waiting)
         while bytes_waiting > 0:
             recvd_command = recvd_command + self.ser.read(size=1)
-            bytes_waiting = bytes_waiting - 1
+            bytes_waiting -= 1
         return recvd_command
 
     def check_crc(self, destuffed_response):
-        '''
+        """
         Check the CRC from the received response with the calculated CRC
         of the payload. If we calculate the CRC of the payload+received CRC
         and it equals 0, then we know that the data is OK (up to whatever %
         the bit error rate is for the CRC algorithm being used).
-        '''
+        """
         self.crc_calc.reset(value=PCMD.init)
         self.crc_calc.process(destuffed_response[4:-1])
         if self.crc_calc.final() != 0:
@@ -146,16 +147,16 @@ class SerialManager(Thread):
 
     @staticmethod
     def destuff_response(raw_response):
-        '''
+        """
         Response should be in the following format:
         [HDR] [ACK] [DESC] [PAYLOAD] [CRC] [END]
         1byte 1byte 2bytes <18bytes  1byte 1byte
-        '''
+        """
         logging.debug('Raw response: %s', helpers.print_bytearray(raw_response))
 
         escaped = False
         destuffed_payload = b''
-        for b in raw_response[4:-2]: # get payload part of response
+        for b in raw_response[4:-2]:  # get payload part of response
             byte = bytes([b])  # convert int to byte in order to concatenate at the end
             if byte == PCMD.esc and escaped is True:
                 destuffed_payload = destuffed_payload + byte
@@ -171,9 +172,9 @@ class SerialManager(Thread):
         return raw_response[:4] + destuffed_payload + raw_response[-2:]
 
     def send_command(self, command):
-        '''Send commands to microcontroller via RS232.
+        """Send commands to microcontroller via RS232.
         This function deals directly with the serial port.
-        '''
+        """
         # Calculate CRC for command
         self.crc_calc.reset(value=PCMD.init)
         self.crc_calc.process(command)
@@ -198,5 +199,5 @@ class SerialManager(Thread):
         logging.info('Command sent to microcontroller: %s', helpers.print_bytearray(command_array))
 
     def close(self):
-        ''' Close connection to the serial port.'''
+        """ Close connection to the serial port."""
         self.ser.close()

@@ -1,3 +1,4 @@
+zmq
 celery==3.1.23
 configparser=>3.5.0
 crccheck==0.6
