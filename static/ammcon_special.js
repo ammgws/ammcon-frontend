@@ -27,7 +27,7 @@ $(function() {
 // registers this change event handler on 'document ready'
 $(function() {
   $('.temp').bind('click', function() {
-    temp_command = $(this).attr("id")
+    temp_command = $(this).attr("id");
     // for debugging purposes:
     //alert(temp_command)
     $.getJSON($SCRIPT_ROOT + '/command', {
