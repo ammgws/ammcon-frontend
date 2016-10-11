@@ -42,7 +42,7 @@ def print_bytearray(input_array):
     return b''
 
 
-def send_magic_packet(mac_address, broadcast_address="192.168.1.255", port=9):
+def send_magic_packet(mac_address, broadcast_address, port=9):
     # Create an IPv4, UDP socket
     sock = socket(family=AF_INET, type=SOCK_DGRAM)
     # Enable sending datagrams to broadcast addresses

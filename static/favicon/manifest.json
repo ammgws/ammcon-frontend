@@ -1,5 +1,6 @@
 {
 	"name": "AmmCon",
+	"description": "Home automation frontend.",
 	"icons": [
 		{
 			"src": "\/static/favicon/android-chrome-192x192.png",
@@ -8,6 +9,7 @@
 		}
 	],
 	"theme_color": "#b900bd",
+	"background_color": "#fff",
 	"display": "standalone",
-      "orientation": "portrait"
+	"orientation": "portrait"
 }
