@@ -3,7 +3,7 @@
 $(function() {
   $('.commands').bind('click', function() {
     $.getJSON($SCRIPT_ROOT + '/command', {
-      command: $(this).attr("value"),
+      command: $(this).attr("value")
     }, function(data) {
       // redirect back to homepage to reauthorise
       if (data.redirect) {
@@ -31,7 +31,7 @@ $(function() {
     // for debugging purposes:
     //alert(temp_command)
     $.getJSON($SCRIPT_ROOT + '/command', {
-      command: temp_command,
+      command: temp_command
     }, function(data) {
       // redirect back to homepage to reauthorise
       if (data.redirect) {
