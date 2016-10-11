@@ -9,8 +9,9 @@ from sys import path
 # Ammcon imports
 from serialmanager import SerialManager
 
+
 def main():
-    '''Setup and start serial port manager thread.'''
+    """Setup and start serial port manager thread."""
     # Get absolute path of the dir script is run from
     cwd = path[0]  # pylint: disable=C0103
 
@@ -21,8 +22,9 @@ def main():
     log_handler = logging.handlers.RotatingFileHandler(os.path.join(cwd, 'logs', log_filename),
                                                        maxBytes=5242880,
                                                        backupCount=3)
-    log_format = logging.Formatter(fmt='%(asctime)s.%(msecs).03d %(name)-12s %(levelname)-8s %(message)s (%(filename)s:%(lineno)d)',
-                                   datefmt='%Y-%m-%d %H:%M:%S')
+    log_format = logging.Formatter(
+        fmt='%(asctime)s.%(msecs).03d %(name)-12s %(levelname)-8s %(message)s (%(filename)s:%(lineno)d)',
+        datefmt='%Y-%m-%d %H:%M:%S')
     log_handler.setFormatter(log_format)
     logger.addHandler(log_handler)
 
@@ -33,6 +35,7 @@ def main():
     #       Windows using USB adaptor or serial port; 'COM1', 'COM2, etc.
     serial_port = SerialManager('/dev/ttyUSB0')
     serial_port.start()
+
 
 if __name__ == '__main__':
     main()

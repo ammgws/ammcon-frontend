@@ -12,7 +12,7 @@ import helpers
 
 
 class TempLogger(Thread):
-    '''Get current temperature and log to file.'''
+    """Get current temperature and log to file."""
 
     def __init__(self, interval, log_path, command_queue, response_queue):
         Thread.__init__(self)
