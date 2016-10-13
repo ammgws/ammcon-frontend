@@ -17,7 +17,11 @@ class SerialManager(Thread):
     """Class for handling intermediary communication between hardware connected
     to the serial port and Python. By using queues to pass commands to/responses
     from the serial port, it can be shared between multiple Python threads, or
-    processes if changed to use multiprocessing module instead."""
+    processes if changed to use multiprocessing module instead.
+
+    TO DO: move to its own module, allow use of zmq/Queue/multiprocessing queue
+           or whatever else by abstracting it away
+    """
 
     def __init__(self, port):
         Thread.__init__(self)
