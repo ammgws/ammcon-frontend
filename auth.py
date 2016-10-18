@@ -1,9 +1,7 @@
-from flask import current_app, url_for, request, redirect
-from rauth import OAuth2Service
-
-# import json
-import simplejson as json  # http://stackoverflow.com/questions/30289647/rauth-with-google-provider-and-python3
 import requests
+import simplejson as json  # http://stackoverflow.com/questions/30289647/rauth-with-google-provider-and-python3
+from flask import current_app, redirect, request, url_for
+from rauth import OAuth2Service
 
 
 # http://blog.miguelgrinberg.com/post/oauth-authentication-with-flask
@@ -24,8 +22,7 @@ class OAuthSignIn(object):
         pass
 
     def get_callback_url(self):
-        return url_for('oauth_callback', provider=self.provider_name,
-                       _external=True)
+        return url_for('oauth_callback', provider=self.provider_name, _external=True)
 
     @classmethod
     def get_provider(cls, provider_name):
@@ -60,7 +57,7 @@ class GoogleSignIn(OAuthSignIn):
 
     def callback(self):
         if 'code' not in request.args:
-            return None, None, None
+            return None, None
 
         oauth_session = self.service.get_auth_session(
             data={'code': request.args['code'],

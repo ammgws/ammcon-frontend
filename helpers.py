@@ -61,7 +61,7 @@ def send_magic_packet(mac_address, broadcast_address, port=9):
     return ack
 
 
-class _ImgurClient():
+class _ImgurClient(object):
     """ Handle authentication and image uploading to Imgur. """
 
     def __init__(self):
@@ -170,7 +170,7 @@ def get_graph_data(num_hours):
     temp_vals = sliding_mean(temp_vals)
     humidity_vals = sliding_mean(humidity_vals)
 
-    return (temp_times, temp_vals, humidity_vals)
+    return temp_times, temp_vals, humidity_vals
 
 
 def graph(num_hours):

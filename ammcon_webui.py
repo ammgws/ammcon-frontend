@@ -39,7 +39,7 @@ if os.environ.get('DATABASE_URL') is None:
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
 db = SQLAlchemy(app)  # create a SQLAlchemy db object from our app object
-# Create SQLAlchemy database file if it does not already exist.
+# Create SQLAlchemy database table if it does not already exist.
 db.create_all()
 
 
@@ -83,6 +83,7 @@ app.logger.info('############### Starting Ammcon Web UI ###############')
 # fails then we're screwed anyway)
 context = zmq.Context()
 socket = context.socket(zmq.REQ)
+socket.setsockopt(zmq.RCVTIMEO, 500)  # timeout in ms
 socket.connect('tcp://localhost:5555')
 app.logger.info('############### Connected to zeroMQ server ###############')
 
