@@ -25,3 +25,6 @@ REMEMBER_COOKIE_SECURE = True  # Restricts the “Remember Me” cookie’s scop
 # HTPC WoL info TODO: move to proper file
 MAC_ADDR = 'FF:FF:FF:FF:FF:FF'
 BROADCAST_ADDR = '99.99.99.255'
+
+# Allowed IP addresses for private API
+ALLOWED_IP_ADDR = ['192.168.0.1']

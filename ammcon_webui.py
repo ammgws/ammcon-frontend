@@ -11,14 +11,14 @@ Ammcon is a personal home automation project. This file provides the web UI.
 import datetime as dt
 import logging.handlers
 import os.path
+from functools import wraps
 from os import urandom  # pylint: disable=C0412
 # Third party imports
 import zmq
-from flask import (Flask, flash, json, redirect, render_template, request,
-                   session, url_for)
-from flask_login import (LoginManager, UserMixin, login_user, logout_user,
-                         current_user, login_required)
+from flask import (Flask, abort, flash, json, render_template, redirect, request, session, url_for)
+from flask_login import (LoginManager, UserMixin, current_user, login_required, login_user, logout_user)
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.contrib.fixers import ProxyFix
 # Ammcon imports
 import h_bytecmds as PCMD
 import helpers
@@ -27,6 +27,8 @@ from auth import OAuthSignIn
 # Flask configuration
 app = Flask(__name__, template_folder='templates')
 app.config.from_object('flask_config')  # load Flask config file
+# Get client IP (remote address) from the X-Forward set by the proxy server (AmmCon should never be run without a proxy)
+app.wsgi_app = ProxyFix(app.wsgi_app)
 
 # Generate secret key using the operating system's RNG.
 # This key is used to sign sessions (i.e. cookies), but is also needed for
@@ -83,9 +85,20 @@ app.logger.info('############### Starting Ammcon Web UI ###############')
 # fails then we're screwed anyway)
 context = zmq.Context()
 socket = context.socket(zmq.REQ)
-socket.setsockopt(zmq.RCVTIMEO, 500)  # timeout in ms
+# socket.setsockopt(zmq.RCVTIMEO, 500)  # timeout in ms
 socket.connect('tcp://localhost:5555')
 app.logger.info('############### Connected to zeroMQ server ###############')
+
+
+def internal_only(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if request.remote_addr in app.config['ALLOWED_IP_ADDR']:
+            return f(*args, **kwargs)
+        else:
+            app.logger.warning('Attempted access from: %s', request.remote_addr)
+            return abort(403)
+    return decorated_function
 
 
 @app.route('/')
@@ -156,6 +169,34 @@ def run_command():
                        'time': date_time_str})
 
 
+@app.route('/command/scene/htpc/<state>')
+@internal_only
+def set_scene_htpc(state):
+    """Set scene for HTPC (e.g. turning off the lights when playback starts.) """
+    if state == 'playing':
+        # turn off all lights in the HTPC room
+        command_text = 'living off'
+    elif state == 'paused':
+        # turn on the far light in the HTPC room
+        command_text = 'living2 low'
+    elif state == 'stopped':
+        # turn on both lights in the HTPC room
+        command_text = 'living on'
+    else:
+        command_text = 'ignore'
+
+    command = PCMD.micro_commands.get(command_text, None)
+    if command:
+        app.logger.info('Command "%s" received. '
+                        'Sending message: %s', command_text, command)
+        socket.send(command)
+        response = socket.recv()  # blocks until response is found
+        app.logger.info('Response received: %s', helpers.print_bytearray(response))
+    else:
+        app.logger.info('Invalid command. Do nothing')
+    return 'Scene set.'
+
+
 @app.route('/authorize/<provider>')
 def oauth_authorize(provider):
     """ OAUTH authorization flow. """
@@ -200,15 +241,6 @@ def oauth_callback(provider):
     return redirect(url_for('index'))
 
 
-def allowed_email(email):
-    """ Check if the email used to sign in is an allowed user of Ammcon. """
-    if email in app.config['ALLOWED_EMAILS']:
-        return True
-    else:
-        app.logger.info('Unauthorised user login attempt.')
-    return False
-
-
 @app.route('/login')
 def login():
     """Serve login page if not authenticated."""
@@ -236,19 +268,26 @@ def setup():
     app.logger.debug('This is before first request')
 
 
-@app.errorhandler(404)
-def page_not_found(error):
-    """Handle 404 errors. Only this error serves a non-generic page."""
-    app.logger.warning('Page not found: %s (Error message = %s)', request.path, error)
-    return render_template('page_not_found.html'), 404
-
-
 @app.errorhandler(400)
 def key_error(e):
     """Handle invalid requests. Serves a generic error page."""
     # pass exception instance in exc_info argument
     app.logger.warning('Invalid request resulted in KeyError', exc_info=e)
     return render_template('error.html'), 400
+
+
+@app.errorhandler(403)
+def unauthorized_access(error):
+    """Handle 403 errors. Serves a generic error page."""
+    app.logger.warning('Access forbidden: %s (Error message = %s)', request.path, error)
+    return render_template('error.html'), 403
+
+
+@app.errorhandler(404)
+def page_not_found(error):
+    """Handle 404 errors. Only this error serves a non-generic page."""
+    app.logger.warning('Page not found: %s (Error message = %s)', request.path, error)
+    return render_template('page_not_found.html'), 404
 
 
 @app.errorhandler(500)
@@ -264,6 +303,14 @@ def unhandled_exception(e):
     app.logger.error('An unhandled exception is being displayed to the end user', exc_info=e)
     return render_template('error.html'), 500
 
+
+def allowed_email(email):
+    """ Check if the email used to sign in is an allowed user of Ammcon. """
+    if email in app.config['ALLOWED_EMAILS']:
+        return True
+    else:
+        app.logger.info('Unauthorised user login attempt.')
+    return False
 
 if __name__ == '__main__':
     # Setup SSL certificate for Flask to use when running the Flask dev server
