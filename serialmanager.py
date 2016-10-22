@@ -79,7 +79,7 @@ class SerialManager(Thread):
             # Check CRC of destuffed command
             if not self.check_crc(response):
                 logging.debug('Invalid CRC')
-                response = None
+                response = 'invalid CRC'
 
             # Send response back to client
             self.socket.send(response)
@@ -88,7 +88,7 @@ class SerialManager(Thread):
         """
         Read one byte from serial port.
         """
-        read_byte = ''
+        read_byte = b''
         try:
             read_byte = self.ser.read(1)
         except serial.SerialException:
@@ -192,10 +192,10 @@ class SerialManager(Thread):
             self.ser.write(command_array)
         except serial.SerialTimeoutException:
             # Write timeout for port exceeded (only if timeout is set).
-            logging.warning('Serial port timeout exceeded - unable to write.')
+            logging.error('Serial port timeout exceeded - unable to write.')
         except serial.SerialException:
             # Attempted to write to closed port
-            logging.warning('Serial port not open - unable to write.')
+            logging.error('Serial port not open - unable to write.')
 
         # Wait until all data is written
         self.ser.flush()
