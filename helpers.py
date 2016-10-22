@@ -4,24 +4,16 @@
 
 # Imports from Python Standard Library
 import datetime as dt
-import logging
-import os.path
 from socket import socket, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_BROADCAST
-from subprocess import check_output
 from sys import path
-# Third party imports
-from configparser import ConfigParser
-from matplotlib import rcParams
-import matplotlib.dates as mdates
-import matplotlib.pyplot as plt
-from imgurpython import ImgurClient
-from imgurpython.helpers.error import ImgurClientError
+
 
 # Get absolute path of the dir script is run from
 cwd = path[0]  # pylint: disable=C0103
 
 
 def temp_str(response):
+    """Return string representation of temperature and humidity from microcontroller response."""
     temp = '{0}.{1}degC @{2}.{3}%RH'.format(int(response[0]),
                                             int(response[1]),
                                             int(response[2]),
@@ -30,19 +22,22 @@ def temp_str(response):
 
 
 def temp_val(response):
+    """Return values of temperature and humidity from microcontroller response."""
     payload = response[4:-2]
     temp = int(payload[0]) + 0.01 * int(payload[1])
     humidity = int(payload[2]) + 0.01 * int(payload[3])
     return temp, humidity
 
 
-def print_bytearray(input_array):
-    if input_array:
-        return [hex(n) for n in input_array]
+def print_bytearray(input_bytearray):
+    """Return printable version of a bytearray."""
+    if input_bytearray:
+        return [hex(n) for n in input_bytearray]
     return b''
 
 
 def send_magic_packet(mac_address, broadcast_address, port=9):
+    """Send Wake-On-LAN packet to the specified MAC address."""
     # Create an IPv4, UDP socket
     sock = socket(family=AF_INET, type=SOCK_DGRAM)
     # Enable sending datagrams to broadcast addresses
@@ -59,218 +54,6 @@ def send_magic_packet(mac_address, broadcast_address, port=9):
     else:
         ack = 'NAK'
     return ack
-
-
-class _ImgurClient(object):
-    """ Handle authentication and image uploading to Imgur. """
-
-    def __init__(self):
-        self.config_values = ConfigParser()
-        self.config_values.read(os.path.join(cwd, 'ammcon_config.ini'))
-        self.client_id = self.config_values.get('Imgur', 'client_id')
-        self.client_secret = self.config_values.get('Imgur', 'client_secret')
-        self.access_token = self.config_values.get('Imgur', 'access_token')
-        self.refresh_token = self.config_values.get('Imgur', 'refresh_token')
-        self.client = ImgurClient(self.client_id, self.client_secret)
-
-    def save_config(self):
-        """ Save tokens to config file."""
-        self.config_values['Imgur']['access_token'] = self.access_token
-        self.config_values['Imgur']['refresh_token'] = self.refresh_token
-        with open(os.path.join(cwd, 'ammcon_config.ini'), 'w') as config_file:
-            self.config_values.write(config_file)
-
-    def authenticate(self):
-        """Authenticate with Imgur and obtain access & refresh tokens."""
-        # Authorization flow, pin example (see Imgur docs for other auth types)
-        authorization_url = self.client.get_auth_url('pin')
-        print("Go to the following URL: {0}".format(authorization_url))
-
-        # Read in the pin typed into the terminal
-        pin = input("Enter pin code: ")
-        credentials = self.client.authorize(pin, 'pin')
-        self.access_token = credentials['access_token']
-        self.refresh_token = credentials['refresh_token']
-        self.client.set_user_auth(self.access_token, self.refresh_token)
-
-        # Save tokens for next login
-        self.save_config()
-
-    def login(self):
-        """Login to Imgur using refresh token."""
-        # Get client ID, secret and refresh_token from auth.ini
-        self.client.set_user_auth(self.access_token, self.refresh_token)
-
-    def upload(self, image_path):
-        """Upload image to Imgur and return link."""
-        return self.client.upload_from_path(image_path, anon=False)
-
-
-def sliding_mean(data, window=5):
-    """Take an array of numbers and smooth them out. See: http://goo.gl/6ScgxV
-
-    Args:
-        data -- list of data to be smoothed
-        window -- window to use for sliding mean
-    Returns:
-        List of smoothed data
-    """
-    smoothed_data = []
-    for i in range(len(data)):
-        indices = range(max(i - window + 1, 0),
-                        min(i + window + 1, len(data)))
-        avg = 0
-        for j in indices:
-            avg += float(data[j])
-        avg /= float(len(indices))
-        smoothed_data.append(avg)
-
-    return smoothed_data
-
-
-def get_graph_data(num_hours):
-    """ Parse temp log file and get data for graphing
-
-    Args:
-        hours -- how many hours back to go
-    Returns:
-        Tuple of lists
-    """
-    # 正常では温度は１分おきに記録しているため、ログファイルの最後の（n=hours*60）エントリー
-    # のみ見たら処理時間を最小限にできる.
-    # Need to make this Windows friendly.. alternative to tail??
-    temp_log = check_output(['tail',
-                             '-' + str(num_hours * 60),
-                             os.path.join(cwd, 'temp_log.txt')])
-    temp_log = temp_log.decode().split('\n')
-    # Remove last item since it will be null ('') due to the last line of
-    # the logfile ending with a newline char
-    del temp_log[-1]
-
-    # 上記データの記録時間を確認し該当するデータ（ref_time～現在時刻のデータ）のみ残しておく
-    # ログファイルの形式: 2016-07-01 23:22, 28.00degC @53.00%RH
-    #                  　　 日付    時間,　　 温度　　 　　　湿度
-    ref_time = dt.datetime.now() - dt.timedelta(hours=int(num_hours))
-    temp_times = []
-    temp_vals = []
-    humidity_vals = []
-    for line in temp_log:
-        _data = line.split(', ')
-        timestamp = dt.datetime.strptime(_data[0], "%Y-%m-%d %H:%M")
-        temp = _data[1][:5]
-        humidity = _data[1][11:16]
-        if is_number(temp) and ref_time <= timestamp:
-            temp_times.append(timestamp)
-            temp_vals.append(temp)
-            humidity_vals.append(humidity)
-
-    if len(temp_times) <= 2:
-        return "Not enough data points to create graph"
-
-    temp_vals = sliding_mean(temp_vals)
-    humidity_vals = sliding_mean(humidity_vals)
-
-    return temp_times, temp_vals, humidity_vals
-
-
-def graph(num_hours):
-    """Generate graph of past n hours of room temperature
-
-    Args:
-        hours -- how many hours back to graph
-    Returns:
-        Message to send back to Hangouts user
-    """
-
-    temp_times, temp_vals, humidity_vals = get_graph_data(num_hours)
-
-    # Setup plot, title, axes labels
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111,
-                          xlabel='time',
-                          # ylabel=u'Temp (\u00B0C)',
-                          ylabel='Temp (degC)',
-                          title='Temperature over last {0} hour(s)'.format(num_hours))
-    ax1.yaxis.label.set_color('blue')
-    ax2 = ax1.twinx()  # Setup second y-axis (using same x-axis)
-    ax2.yaxis.label.set_color('red')
-    ax2.set_ylabel('%RH')
-    rcParams.update({'figure.autolayout': True})
-
-    # Plot the graphs
-    ax1.plot(temp_times, temp_vals)
-    ax2.plot(temp_times, humidity_vals, 'red')
-
-    # Annotate the min and max temps on the graph
-    min_temp = min(temp_vals)
-    min_timestamp = temp_times[temp_vals.index(min_temp)]
-    max_temp = max(temp_vals)
-    max_timestamp = temp_times[temp_vals.index(max_temp)]
-    ax1.annotate(str(min_temp)[:5],
-                 xy=(mdates.date2num(min_timestamp), min_temp),
-                 xytext=(-20, 20),
-                 textcoords='offset points',
-                 arrowprops=dict(arrowstyle='-|>'),
-                 bbox=dict(boxstyle='round,pad=0.2', fc='yellow', alpha=0.3)
-                 )
-    ax1.annotate(str(max_temp)[:5],
-                 xy=(mdates.date2num(max_timestamp), max_temp),
-                 xytext=(-20, 20),
-                 textcoords='offset points',
-                 arrowprops=dict(arrowstyle='-|>'),
-                 bbox=dict(boxstyle='round,pad=0.2', fc='yellow', alpha=0.3)
-                 )
-
-    # Setup x-axis formatting
-    ax1.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
-    ax1.xaxis.set_major_locator(mdates.MinuteLocator(interval=num_hours * 5))
-    # Rotate and right align x-axis date ticklabels so they don't overlap.
-    plt.gcf().autofmt_xdate()
-
-    folder = os.path.join(cwd, 'graphs')
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-    filename = 'tempPlot_{0}.png'.format(dt.datetime.now().strftime("%Y%m%d_%Hh%Mm%Ss"))
-    plt.savefig(os.path.join(folder, filename))
-
-    # Login to Imgur and upload image
-    imgur_client = _ImgurClient()
-    try:
-        imgur_client.login()
-    except ImgurClientError as err:
-        print(err.error_message)
-        logging.info('%s; %s', err.error_message, err.status_code)
-        imgur_client.authenticate()
-    imgur_resp = imgur_client.upload(os.path.join(folder, filename))
-
-    # Prepare message to send back to Hangouts user
-    return 'Graph of last {0} hour(s): {1}'.format(num_hours, imgur_resp['link'])
-
-
-def is_number(num):
-    """ Placeholder docstring - update later """
-    try:
-        float(num)
-        return True
-    except ValueError:
-        pass
-
-    return False
-
-
-# def is_valid_temp(s):
-#    '''Determine if the detected change in room temperature is
-#    within defined limit'''
-#    # Current implementation is broken.
-#    # Also need to consider the time between temp values
-#    try:
-#        is_number(s)
-#        if abs(float(s) - float(prev_temp)) > MAX_TEMP_CHANGE:
-#            return True
-#    except ValueError:
-#        pass
-#
-#    return False
 
 
 def current_time():
