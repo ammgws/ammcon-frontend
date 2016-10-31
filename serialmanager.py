@@ -51,7 +51,7 @@ class SerialManager(Thread):
             #       readline() (read '\n' terminated line). Perhaps need to
             #       implement own timeout in read function...
         except serial.SerialException:
-            logging.warning('No serial device detected.')
+            logging.error('No serial device detected.')
 
         # Give microcontroller time to startup (esp. if has bootloader on it)
         sleep(2)
