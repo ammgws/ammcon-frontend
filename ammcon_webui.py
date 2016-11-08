@@ -12,7 +12,6 @@ import datetime as dt
 import logging.handlers
 import os.path
 from functools import wraps
-from os import urandom  # pylint: disable=C0412
 # Third party imports
 import zmq
 from flask import (Flask, abort, flash, json, render_template, redirect, request, session, url_for)
@@ -20,7 +19,7 @@ from flask_login import (LoginManager, UserMixin, current_user, login_required, 
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.contrib.fixers import ProxyFix
 # Ammcon imports
-import h_bytecmds as PCMD
+import h_bytecmds as pcmd
 import helpers
 from auth import OAuthSignIn
 
@@ -30,16 +29,18 @@ app.config.from_object('flask_config')  # load Flask config file
 # Get client IP (remote address) from the X-Forward set by the proxy server (AmmCon should never be run without a proxy)
 app.wsgi_app = ProxyFix(app.wsgi_app)
 
-# Generate secret key using the operating system's RNG.
-# This key is used to sign sessions (i.e. cookies), but is also needed for
-# Flask's flashing system to work.
-app.secret_key = urandom(24)
+# Get Flask secret key from config file or environment variable.
+# This key is used to sign sessions (i.e. cookies), but is also needed for Flask's flashing system to work.
+if os.environ.get('FLASK_SECRET_KEY') is None:
+    app.secret_key = app.config['SECRET_KEY']
+else:
+    app.secret_key = os.environ['FLASK_SECRET_KEY']
 
 # SQLAlchemy configuration
-if os.environ.get('DATABASE_URL') is None:
+if os.environ.get('SQLALCHEMY_DATABASE_URL') is None:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
 else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['SQLALCHEMY_DATABASE_URL']
 db = SQLAlchemy(app)  # create a SQLAlchemy db object from our app object
 # Create SQLAlchemy database table if it does not already exist.
 db.create_all()
@@ -57,7 +58,7 @@ class User(UserMixin, db.Model):
 lm = LoginManager(app)  # create a LoginManager object from our app object
 lm.login_view = 'login'  # Redirect non-logged in users to this view
 lm.login_message = 'You must login to access AmmCon.'
-lm.session_protection = "none"  # Disable so that don't need to relogin when going from wifi to mobile and vice versa
+lm.session_protection = "basic"  # actions requiring a fresh session will require reauthentication, otherwise OK
 
 
 @lm.user_loader
@@ -91,6 +92,7 @@ app.logger.info('############### Connected to zeroMQ server ###############')
 
 
 def internal_only(f):
+    """ Decorator used to only allow requests from whitelisted IP addresses."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if request.remote_addr in app.config['ALLOWED_IP_ADDR']:
@@ -132,7 +134,7 @@ def run_command():
         return json.dumps({'redirect': url_for('login')})
 
     command_text = request.args.get('command', '', type=str)
-    command = PCMD.micro_commands.get(command_text, None)
+    command = pcmd.micro_commands.get(command_text, None)
     if command:
         app.logger.info('Command "%s" received. '
                         'Sending message: %s', command_text, command)
@@ -153,9 +155,9 @@ def run_command():
                                          humidity)
     elif command_text == 'htpc wol':
         response = helpers.send_magic_packet(app.config['MAC_ADDR'], app.config['BROADCAST_ADDR'])
-    elif bytes([response[1]]) == PCMD.nak:
+    elif bytes([response[1]]) == pcmd.nak:
         response = 'NAK'
-    elif bytes([response[1]]) == PCMD.ack:
+    elif bytes([response[1]]) == pcmd.ack:
         response = 'ACK'
     else:
         response = 'UNKNOWN'
@@ -185,7 +187,7 @@ def set_scene_htpc(state):
     else:
         command_text = 'ignore'
 
-    command = PCMD.micro_commands.get(command_text, None)
+    command = pcmd.micro_commands.get(command_text, None)
     if command:
         app.logger.info('Command "%s" received. '
                         'Sending message: %s', command_text, command)
@@ -227,10 +229,9 @@ def oauth_callback(provider):
     user = User.query.filter_by(email=email).first()
     # Create user if necessary.
     if not user:
-        nickname = username
         # Use first part of email if name is not available.
-        if nickname is None or nickname == "":
-            nickname = email.split('@')[0]
+        if not username:
+            username = email.split('@')[0]
         # Create user object
         user = User(nickname=username, email=email)
         # Save to database
