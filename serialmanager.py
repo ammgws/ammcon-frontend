@@ -9,7 +9,7 @@ import serial
 import zmq
 from crccheck.crc import Crc
 # Ammcon imports
-import h_bytecmds as PCMD
+import h_bytecmds as pcmd
 import helpers
 
 
@@ -29,8 +29,8 @@ class SerialManager(Thread):
 
         # Setup CRC calculator instance. Used to check CRC of response messages
         self.crc_calc = Crc(width=8,
-                            poly=PCMD.poly,
-                            initvalue=PCMD.init)
+                            poly=pcmd.poly,
+                            initvalue=pcmd.init)
         self.serial_state = 'wait_hdr'
 
         # Setup zeroMQ REP socket for receiving commands
@@ -73,7 +73,7 @@ class SerialManager(Thread):
 
             # Read in response from microcontroller
             # raw_response = self.get_response()  # unreliable
-            raw_response = self.get_response_until(PCMD.end)  # may block forever
+            raw_response = self.get_response_until(pcmd.end)  # may block forever
             response = self.destuff_response(raw_response)
 
             # Check CRC of destuffed command
@@ -138,7 +138,7 @@ class SerialManager(Thread):
         and it equals 0, then we know that the data is OK (up to whatever %
         the bit error rate is for the CRC algorithm being used).
         """
-        self.crc_calc.reset(value=PCMD.init)
+        self.crc_calc.reset(value=pcmd.init)
         self.crc_calc.process(destuffed_response[4:-1])
         if self.crc_calc.final() != 0:
             # Data is invalid/corrupted
@@ -162,11 +162,11 @@ class SerialManager(Thread):
         destuffed_payload = b''
         for b in raw_response[4:-2]:  # get payload part of response
             byte = bytes([b])  # convert int to byte in order to concatenate at the end
-            if byte == PCMD.esc and escaped is True:
+            if byte == pcmd.esc and escaped is True:
                 destuffed_payload = destuffed_payload + byte
-            elif byte == PCMD.esc and escaped is False:
+            elif byte == pcmd.esc and escaped is False:
                 escaped = True
-            elif byte == PCMD.end:
+            elif byte == pcmd.end:
                 break
             else:
                 destuffed_payload = destuffed_payload + byte
@@ -180,12 +180,12 @@ class SerialManager(Thread):
         This function deals directly with the serial port.
         """
         # Calculate CRC for command
-        self.crc_calc.reset(value=PCMD.init)
+        self.crc_calc.reset(value=pcmd.init)
         self.crc_calc.process(command)
         crc = self.crc_calc.finalbytes()
 
         # Build up command byte array
-        command_array = PCMD.hdr + command + crc + PCMD.end
+        command_array = pcmd.hdr + command + crc + pcmd.end
 
         # Attempt to write to serial port.
         try:

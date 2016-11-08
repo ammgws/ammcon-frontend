@@ -7,7 +7,7 @@ import os.path
 from threading import Thread
 from time import sleep
 # Ammcon imports
-import h_bytecmds as PCMD
+import h_bytecmds as pcmd
 import helpers
 
 
@@ -31,7 +31,7 @@ class TempLogger(Thread):
     def run(self):
         while self.stop_thread != 1:
             # print('Entered temp_logger thread')
-            self.command_queue.put(PCMD.micro_commands['temp'])
+            self.command_queue.put(pcmd.micro_commands['temp'])
             response = self.response_queue.get()  # block until response is found
             logging.debug('[TempLog] Received reply: %s', helpers.print_bytearray(response))
 
