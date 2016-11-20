@@ -25,6 +25,7 @@ LOG_FOLDER = '/path/to/logs'
 
 # Cookies
 REMEMBER_COOKIE_SECURE = True  # Restricts the “Remember Me” cookie’s scope to HTTPS
+SESSION_COOKIE_SECURE = True  # Set secure flag to prevent HTTPS cookies from leaking over HTTP
 
 # HTPC WoL info TODO: move to proper file
 MAC_ADDR = 'FF:FF:FF:FF:FF:FF'
