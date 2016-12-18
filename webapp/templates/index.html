@@ -2,7 +2,7 @@
 
 {%- block head -%}
   {{ super() }} {# Render the default head contents #}
-  <script src="{{ url_for('static', filename='ammcon_special.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ammcon_special.js') }}"></script>
 {%- endblock head %}
 
 {% block content -%}
@@ -125,6 +125,8 @@
     <h4>System date: {{ date_time }}
     <br />
     System uptime: {{ uptime }}</h4>
+    {# Flask-Admin uses Bootstrap so need to set data-ajax=false as jQuery Mobile expects links to also use jQuery Mobile #}
+    <a href="{{ url_for('admin.index') }}" data-ajax="false">Admin CP</a>
   </div>
 
 </div>
