@@ -155,6 +155,7 @@ def oauth_authorize(provider):
     """ OAUTH authorization flow. """
     # Redirect user to main page if already logged in.
     if current_user.is_authenticated:
+        app.logger.debug("Redirect authenticated user to main page.")
         return redirect(url_for('index'))
     oauth = OAuthSignIn.get_provider(provider)
     return oauth.authorize()
@@ -165,7 +166,9 @@ def oauth_callback(provider):
     """ Sign in using OAUTH, and redirect back to main page. """
     # Redirect user to main page if already logged in.
     if current_user.is_authenticated:
+        app.logger.debug("Redirect authenticated user to main page.")
         return redirect(url_for('index'))
+
     # Otherwise, attempt to sign user in using OAUTH
     oauth = OAuthSignIn.get_provider(provider)
     username, email = oauth.callback()
@@ -178,6 +181,7 @@ def oauth_callback(provider):
         app.logger.info('Unauthorised email address attempted OAUTH login.')
         flash('You are not authorised to use AmmCon.', 'error')
         return redirect(url_for('login'))
+
     # Check whether the user (email address) already exists in the database.
     user = User.query.filter_by(email=email).first()
     # Create user if necessary.
@@ -206,6 +210,7 @@ def oauth_callback(provider):
     # See: https://github.com/mattupstate/flask-security/pull/567
     def save_user(response):
         app.user_datastore.commit()
+        app.logger.debug('Saved user {0} to database.'.format(user.email))
         return response
 
     return redirect(url_for('index'))
@@ -215,6 +220,7 @@ def oauth_callback(provider):
 def login():
     """Serve login page if not authenticated."""
     if current_user.is_authenticated:
+        app.logger.debug("Redirect authenticated user to main page.")
         return redirect(url_for('index'))
     return render_template('login.html')
 

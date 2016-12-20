@@ -11,9 +11,17 @@ from werkzeug.contrib.fixers import ProxyFix
 from webapp.models import db
 
 # Create and configure Flask app
-app = Flask(__name__, template_folder='templates')
-app.config.from_object('flask_config')  # load Flask config file
-app.logger.info("Using config: %s" % app.config['ENVIRONMENT'])
+app = Flask(__name__, instance_path=os.path.join(os.path.expanduser("~"), '.ammcon'), instance_relative_config=True)
+
+if os.environ.get('AMMCON_MODE') not in ['config.Production', 'config.Development', 'config.Testing']:
+    # Load production config by default
+    config_name = 'config.Development'
+else:
+    config_name = os.environ['AMMCON_MODE']
+print("Loading config: {}".format(config_name))
+app.config.from_object(config_name)
+# Override config with user-edited config from Flask instance folder
+app.config.from_pyfile('config.py', silent=False)
 
 # Get Flask secret key from config file or environment variable.
 # This key is used to sign sessions (i.e. cookies), but is also needed for Flask's flashing system to work.
@@ -21,14 +29,10 @@ if os.environ.get('FLASK_SECRET_KEY') is None:
     app.secret_key = app.config['SECRET_KEY']
 else:
     app.secret_key = os.environ['FLASK_SECRET_KEY']
+
 # Get client IP (remote address) from the X-Forward set by the proxy server (AmmCon should never be run without a proxy)
 app.wsgi_app = ProxyFix(app.wsgi_app)
 
-# SQLAlchemy configuration
-if os.environ.get('SQLALCHEMY_DATABASE_URL') is None:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['SQLALCHEMY_DATABASE_URL']
 # Initialise SQLAlchemy databse object with our app instance
 app.db = db
 app.db.init_app(app)
@@ -39,13 +43,16 @@ app.security = Security(app, app.user_datastore)
 
 # import views after app instance is instantiated to avoid circular reference
 # noinspection PyPep8
+from webapp import admin
 from webapp import views
 
 # Configure loggers
+log_folder = app.config['LOG_FOLDER']
+if not os.path.exists(log_folder):
+    os.makedirs(log_folder, exist_ok=True)
 log_format = logging.Formatter(
     fmt='%(asctime)s.%(msecs).03d %(name)-12s %(levelname)-8s %(message)s (%(filename)s:%(lineno)d)',
     datefmt='%Y-%m-%d %H:%M:%S')
-log_folder = app.config['LOG_FOLDER']
 log_filename = '_{0}.log'.format(dt.datetime.now().strftime("%Y%m%d_%Hh%Mm%Ss"))
 flask_log_handler = logging.handlers.RotatingFileHandler(os.path.join(log_folder, 'flask' + log_filename),
                                                          maxBytes=5 * 1024 * 1024,
