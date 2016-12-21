@@ -1,6 +1,9 @@
 import os.path
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+CONFIG_PATH = os.path.join(os.path.expanduser("~"), '.ammcon')
+LOG_PATH = os.path.join(CONFIG_PATH, 'logs')
+SERIAL_PORT = '/dev/ttyUSB0'
 
 
 class BaseConfig(object):
