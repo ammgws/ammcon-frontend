@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Third party imports
 from flask_admin import Admin
 from flask_admin.contrib import sqla

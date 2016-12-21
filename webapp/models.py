@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Python Standard Library
 import datetime as dt
 from functools import wraps

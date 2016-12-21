@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """Helper functions used in Ammcon"""
 
 # Imports from Python Standard Library
