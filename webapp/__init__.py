@@ -8,14 +8,15 @@ from flask import Flask
 from flask_security import Security, SQLAlchemyUserDatastore
 from werkzeug.contrib.fixers import ProxyFix
 # AmmCon views imports are done after app instance is created to avoid circular imports
+from config import CONFIG_PATH
 from webapp.models import db
 
 # Create and configure Flask app
-app = Flask(__name__, instance_path=os.path.join(os.path.expanduser("~"), '.ammcon'), instance_relative_config=True)
+app = Flask(__name__, instance_path=CONFIG_PATH, instance_relative_config=True)
 
 if os.environ.get('AMMCON_MODE') not in ['config.Production', 'config.Development', 'config.Testing']:
     # Load production config by default
-    config_name = 'config.Development'
+    config_name = 'config.Production'
 else:
     config_name = os.environ['AMMCON_MODE']
 print("Loading config: {}".format(config_name))
