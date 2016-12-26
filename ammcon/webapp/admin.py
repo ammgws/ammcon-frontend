@@ -3,8 +3,8 @@ from flask_admin import Admin
 from flask_admin.contrib import sqla
 from flask_security import current_user
 # AmmCon imports
-from webapp import app, db
-from webapp.models import Log, Role, User
+from ammcon.webapp import app, db
+from ammcon.webapp.models import Log, Role, User
 
 
 # Customized User model for Flask-Admin

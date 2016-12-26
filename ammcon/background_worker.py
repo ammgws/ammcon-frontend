@@ -6,9 +6,9 @@ import logging
 import logging.handlers
 import os.path
 from argparse import ArgumentParser
-# Ammcon imports
-from config import CONFIG_PATH, LOG_PATH, SERIAL_PORT
-from serialmanager import SerialManager, VirtualSerialManager
+# AmmCon imports
+from ammcon.config import LOG_PATH, SERIAL_PORT
+from ammcon.serialmanager import SerialManager, VirtualSerialManager
 
 
 def main(arguments):

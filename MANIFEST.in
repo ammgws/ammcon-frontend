@@ -1,2 +1,2 @@
-recursive-include webapp/templates *
-recursive-include webapp/static *
+recursive-include ammcon/webapp/templates *
+recursive-include ammconwebapp/static *

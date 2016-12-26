@@ -1,4 +1,4 @@
-from webapp import app
+from ammcon.webapp import app
 
 if __name__ == "__main__":
     app.run()

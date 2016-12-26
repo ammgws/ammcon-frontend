@@ -7,9 +7,8 @@ import serial
 import zmq
 from crccheck.crc import Crc
 # Ammcon imports
-import h_bytecmds as pcmd
-import helpers
-
+import ammcon.h_bytecmds as pcmd
+import ammcon.helpers as helpers
 
 class SerialManager(Thread):
     """Class for handling intermediary communication between hardware connected

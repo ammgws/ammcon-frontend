@@ -8,12 +8,14 @@ from functools import wraps
 # Third party imports
 from flask import (abort, after_this_request, flash, json, render_template, redirect, request, url_for)
 from flask_security import (current_user, login_required, login_user, logout_user)
-# Ammcon imports
-import h_bytecmds as pcmd
-import helpers
-from webapp import app
-from webapp.auth import OAuthSignIn
-from webapp.models import User, Log
+# AmmCon imports
+import ammcon.h_bytecmds as pcmd
+import ammcon.helpers as helpers
+
+from ammcon.webapp import app
+from ammcon.webapp.models import User, Log
+
+from ammcon.webapp.auth import OAuthSignIn
 
 
 def internal_only(f):

@@ -18,5 +18,5 @@ setup(
                       'requests',
                       'simplejson',
                       'SQLAlchemy',
-                      'pyzmq']
+                      'zmq'],
 )
