@@ -1,6 +1,6 @@
 # ammcon-frontend
 
-Frontend for Ammcon server script for my personal use
+Frontend for Ammcon home automation script
 
 Install from GitHub
 
