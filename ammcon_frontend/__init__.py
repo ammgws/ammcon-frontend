@@ -12,16 +12,19 @@ from ammcon_frontend.config import LOCAL_PATH, LOG_PATH
 from ammcon_frontend.models import db, User, Role
 
 # Create and configure Flask app
-app = Flask(__name__, instance_path=LOCAL_PATH, instance_relative_config=True)
+app = Flask(__name__.split('.')[0], instance_path=LOCAL_PATH, instance_relative_config=True)
+
+print(app.instance_path)
 
 if os.environ.get('AMMCON_MODE') not in ['config.Production', 'config.Development', 'config.Testing']:
-    # Load production config by default
+    # If environment variable not set or invalid, load production config by default.
     config_name = 'config.Production'
 else:
     config_name = os.environ['AMMCON_MODE']
 print("Loading config: {}".format(config_name))
-app.config.from_object(config_name)
-# Override config with user-edited config from Flask instance folder
+# Load default config file from package dir
+app.config.from_object('ammcon_frontend.' + config_name)
+# Override default config values with user-edited config from ammcon local folder
 app.config.from_pyfile('config.py', silent=False)
 
 # Get Flask secret key from config file or environment variable.
