@@ -17,4 +17,4 @@
 *.RTF	 diff=astextplain
 
 # Skip static dir so project isn't identified as Javascript by github
-webapp/static/* linguist-vendored
+ammcon_frontend/static/* linguist-vendored
