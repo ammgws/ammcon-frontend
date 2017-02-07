@@ -1,4 +1,4 @@
-# Serial framing control bytes
+# Serial framing control bytes.
 hdr = b'\x3C'
 end = b'\x3E'
 esc = b'\x7C'
