@@ -8,7 +8,7 @@ with open('LICENSE') as f:
 
 setup(
     name='ammcon_frontend',
-    version='0.2.3',
+    version='0.0.1',
     long_description=readme_text,
     url='http://github.com/ammgws/ammcon-frontend',
     packages=find_packages(exclude=('tests', 'docs')),
@@ -21,14 +21,9 @@ setup(
         'Flask-Security>=1.7.5',
         'Flask-SQLAlchemy>=2.1',
         'gunicorn',
-        'marshmallow',
-        'marshmallow_sqlalchemy',
-        'pyserial>=3.1.1',
         'rauth>=0.7.2',
         'requests',
         'simplejson',
-        'SQLAlchemy',
-        'sqlalchemy_utils',
         'zmq',
     ],
 )
