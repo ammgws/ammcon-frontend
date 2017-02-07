@@ -62,6 +62,7 @@ flask_log_handler.setFormatter(log_format)
 app.logger.addHandler(flask_log_handler)
 app.logger.setLevel(level=app.config['LOG_LEVEL'])
 app.logger.info('############### Starting Ammcon Web UI ###############')
+app.logger.info('Loaded config: {}'.format(config_name))
 
 # Connect to zeroMQ REQ socket, used to communicate with serial port
 # to do: handle disconnections somehow (though if background serial worker
