@@ -262,7 +262,6 @@ fabric.properties
 
 #Ammcon
 *config.ini
-*config.py
 *cfg.py
 *.crt
 *.key

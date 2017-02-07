@@ -7,8 +7,8 @@ import os.path
 from threading import Thread
 from time import sleep
 # Ammcon imports
-import h_bytecmds as pcmd
-import helpers
+import ammcon.h_bytecmds as pcmd
+import ammcon.helpers as helpers
 
 
 class TempLogger(Thread):

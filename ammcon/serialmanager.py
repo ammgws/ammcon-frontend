@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Python Standard Library imports
 import logging
 from threading import Thread
@@ -9,9 +7,8 @@ import serial
 import zmq
 from crccheck.crc import Crc
 # Ammcon imports
-import h_bytecmds as pcmd
-import helpers
-
+import ammcon.h_bytecmds as pcmd
+import ammcon.helpers as helpers
 
 class SerialManager(Thread):
     """Class for handling intermediary communication between hardware connected
@@ -38,20 +35,7 @@ class SerialManager(Thread):
         self.socket = context.socket(zmq.REP)
         self.socket.bind("tcp://*:5555")
 
-        # Attempt to open serial port.
-        try:
-            self.ser = serial.Serial(port=port,
-                                     baudrate=115200,
-                                     timeout=2,
-                                     write_timeout=2)
-            # Timeout is set, so reading from serial port may return less
-            # characters than requested. With no timeout, it will block until
-            # the requested number of bytes are read (eg. ser.read(10)).
-            # Note: timeout does not seem to apply to read() (read one byte) or
-            #       readline() (read '\n' terminated line). Perhaps need to
-            #       implement own timeout in read function...
-        except serial.SerialException:
-            logging.error('No serial device detected.')
+        self.ser = self.open_serial_port(port)
 
         # Give microcontroller time to startup (esp. if has bootloader on it)
         sleep(2)
@@ -84,13 +68,32 @@ class SerialManager(Thread):
             # Send response back to client
             self.socket.send(response)
 
+    @staticmethod
+    def open_serial_port(port):
+        # Attempt to open serial port.
+        try:
+            ser = serial.Serial(port=port,
+                                baudrate=115200,
+                                timeout=2,
+                                write_timeout=2)
+            # Timeout is set, so reading from serial port may return less
+            # characters than requested. With no timeout, it will block until
+            # the requested number of bytes are read (eg. ser.read(10)).
+            # Note: timeout does not seem to apply to read() (read one byte) or
+            #       readline() (read '\n' terminated line). Perhaps need to
+            #       implement own timeout in read function...
+        except serial.SerialException:
+            logging.error('No serial device detected.')
+            ser = None
+        return ser
+
     def read_byte(self):
         """
         Read one byte from serial port.
         """
         read_byte = b''
         try:
-            read_byte = self.ser.read(1)
+            read_byte = self.ser.read(size=1)
         except serial.SerialException:
             # Attempted to read from closed port
             logging.error('Serial port not open - unable to read.')
@@ -205,3 +208,72 @@ class SerialManager(Thread):
     def close(self):
         """ Close connection to the serial port."""
         self.ser.close()
+
+
+class VirtualSerialManager(SerialManager):
+    @staticmethod
+    def open_serial_port(port):
+        return VirtualSerialPort()
+
+
+class VirtualSerialPort(object):
+    def __init__(self):
+        self._received = b''
+        self.in_waiting = 0
+
+        # TO DO: move CRC stuff to helper function
+        # Setup CRC calculator instance. Used to check CRC of response messages
+        self.crc_calc = Crc(width=8,
+                            poly=pcmd.poly,
+                            initvalue=pcmd.init)
+
+    def write(self, data):
+        """ Send sample response based on input command.
+
+            Format: [HDR] [ACK] [DESC] [PAYLOAD] [CRC] [END]
+                    1byte 1byte 2bytes <18bytes  1byte 1byte
+        """
+        # Set sample payload for temperature command
+        if ord(data[1:2]) in range(ord(b'\xD0'), ord(b'\xDF')):
+            ack = pcmd.ack
+            from random import randrange
+            temp1 = randrange(1, 38)  # Random temperature value
+            temp2 = randrange(0, 76, 25)  # Random decimal for temperature: .0, .25, .50 or .75
+            humidity = randrange(10, 80, 5)  # Random humidity value
+            payload = bytes([temp1]) + bytes([temp2]) + bytes([humidity]) + b'\x00'
+        # Set sample payload for light command
+        elif ord(data[1:2]) in range(ord(b'\xB0'), ord(b'\xBF')):
+            ack = pcmd.ack
+            # Payload for light command consists of the inverse of the second byte of DESC
+            # To invert the byte, first convert byte string to integer,
+            # and then mask it to get the lower 16 bits, then convert back to byte string
+            payload = bytes([~data[2] & 0xFF])
+        # Set generic payload for other commands
+        else:
+            ack = pcmd.nak
+            payload = bytes([~data[2] & 0xFF])
+
+        # Calculate CRC for command
+        self.crc_calc.reset(value=pcmd.init)
+        self.crc_calc.process(payload)
+        crc = self.crc_calc.finalbytes()
+
+        self._received = pcmd.hdr + ack + bytes([data[1]]) + bytes([data[2]]) + payload + crc + pcmd.end
+
+    def read(self, size):
+        if self._received:
+            read = self._received[:size]
+            self._received = self._received[size:]
+        else:
+            read = b''
+        self.in_waiting = len(read)
+        return read
+
+    def reset_input_buffer(self):
+        pass
+
+    def close(self):
+        pass
+
+    def flush(self):
+        pass

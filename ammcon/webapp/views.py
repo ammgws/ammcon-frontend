@@ -1,98 +1,26 @@
-#!/usr/bin/env python3
 """
-Ammcon is a personal home automation project. This file provides the web UI.
-.. module:: ammcon
-   :platform: Unix
-   :synopsis: Ammcon main module.
-.. moduleauthor:: ammgws
+Views that handle requests.
 """
 
 # Imports from Python Standard Library
 import datetime as dt
-import logging.handlers
-import os.path
 from functools import wraps
 # Third party imports
-import zmq
-from flask import (Flask, abort, flash, json, render_template, redirect, request, session, url_for)
-from flask_login import (LoginManager, UserMixin, current_user, login_required, login_user, logout_user)
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.contrib.fixers import ProxyFix
-# Ammcon imports
-import h_bytecmds as pcmd
-import helpers
-from auth import OAuthSignIn
+from flask import (abort, after_this_request, flash, json, render_template, redirect, request, url_for)
+from flask_security import (current_user, login_required, login_user, logout_user)
+# AmmCon imports
+import ammcon.h_bytecmds as pcmd
+import ammcon.helpers as helpers
 
-# Flask configuration
-app = Flask(__name__, template_folder='templates')
-app.config.from_object('flask_config')  # load Flask config file
-# Get client IP (remote address) from the X-Forward set by the proxy server (AmmCon should never be run without a proxy)
-app.wsgi_app = ProxyFix(app.wsgi_app)
+from ammcon.webapp import app
+from ammcon.webapp.models import User, Log
 
-# Get Flask secret key from config file or environment variable.
-# This key is used to sign sessions (i.e. cookies), but is also needed for Flask's flashing system to work.
-if os.environ.get('FLASK_SECRET_KEY') is None:
-    app.secret_key = app.config['SECRET_KEY']
-else:
-    app.secret_key = os.environ['FLASK_SECRET_KEY']
-
-# SQLAlchemy configuration
-if os.environ.get('SQLALCHEMY_DATABASE_URL') is None:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['SQLALCHEMY_DATABASE_URL']
-db = SQLAlchemy(app)  # create a SQLAlchemy db object from our app object
-# Create SQLAlchemy database table if it does not already exist.
-db.create_all()
-
-
-class User(UserMixin, db.Model):
-    """ Defines 'User' database model to use with SQLAlchemy."""
-    __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(64), nullable=False, unique=True)
-    nickname = db.Column(db.String(64), nullable=False)
-
-
-# Flask-Login configuration
-lm = LoginManager(app)  # create a LoginManager object from our app object
-lm.login_view = 'login'  # Redirect non-logged in users to this view
-lm.login_message = 'You must login to access AmmCon.'
-lm.session_protection = "basic"  # actions requiring a fresh session will require reauthentication, otherwise OK
-
-
-@lm.user_loader
-def load_user(user_id):
-    """ User loader for SQLAlchemy. """
-    return User.query.get(int(user_id))
-
-
-# Configure loggers
-log_format = logging.Formatter(
-    fmt='%(asctime)s.%(msecs).03d %(name)-12s %(levelname)-8s %(message)s (%(filename)s:%(lineno)d)',
-    datefmt='%Y-%m-%d %H:%M:%S')
-log_folder = app.config['LOG_FOLDER']
-log_filename = '_{0}.log'.format(dt.datetime.now().strftime("%Y%m%d_%Hh%Mm%Ss"))
-flask_log_handler = logging.handlers.RotatingFileHandler(os.path.join(log_folder, 'flask' + log_filename),
-                                                         maxBytes=5 * 1024 * 1024,
-                                                         backupCount=3)
-flask_log_handler.setFormatter(log_format)
-app.logger.addHandler(flask_log_handler)
-app.logger.setLevel(level=app.config['LOG_LEVEL'])
-app.logger.info('############### Starting Ammcon Web UI ###############')
-
-# Connect to zeroMQ REQ socket, used to communicate with serial port
-# to do: handle disconnections somehow (though if background serial worker
-# fails then we're screwed anyway)
-context = zmq.Context()
-socket = context.socket(zmq.REQ)
-# socket.setsockopt(zmq.RCVTIMEO, 500)  # timeout in ms
-socket.connect('tcp://localhost:5555')
-app.logger.info('############### Connected to zeroMQ server ###############')
+from ammcon.webapp.auth import OAuthSignIn
 
 
 def internal_only(f):
-    """ Decorator used to only allow requests from whitelisted IP addresses."""
+    """ Decorator used to only allow requests from whitelisted IP addresses set in config file."""
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if request.remote_addr in app.config['ALLOWED_IP_ADDR']:
@@ -100,6 +28,7 @@ def internal_only(f):
         else:
             app.logger.warning('Attempted access from: %s', request.remote_addr)
             return abort(403)
+
     return decorated_function
 
 
@@ -123,8 +52,11 @@ def index():
 
 
 @app.route('/command', methods=['GET', 'POST'])
+@Log.log_db
 def run_command():
     """ Get command from web UI, and if valid send it off to the micro."""
+
+    # TO DO: fix up all these kludges. Decide on universal response format.
 
     # Redirect back to login page if session expired or unauthorised
     # Cannot use @login_required since commands are sent using AJAX and
@@ -138,23 +70,25 @@ def run_command():
     if command:
         app.logger.info('Command "%s" received. '
                         'Sending message: %s', command_text, command)
-        socket.send(command)
-        response = socket.recv()  # blocks until response is found
+        app.socket.send(command)
+        response = app.socket.recv()  # blocks until response is found
         app.logger.info('Response received: %s', helpers.print_bytearray(response))
+    elif command_text == 'htpc wol':
+        response = helpers.send_magic_packet(app.config['MAC_ADDR'], app.config['BROADCAST_ADDR'])
+        app.logger.info('Sent WOL packet')
     else:
         response = None
         app.logger.info('Invalid command. Do nothing')
 
-    # To do: fix up all these kludges. Decide on universal response format.
     if response is None:
         response = 'INVALID'
+    elif response == 'ACK':
+        response = 'ACK'
     elif command_text.startswith('temp'):
         temp, humidity = helpers.temp_val(response)
         response = '{0}{1}\n{2}%'.format(temp,
                                          u'\N{DEGREE CELSIUS}',
                                          humidity)
-    elif command_text == 'htpc wol':
-        response = helpers.send_magic_packet(app.config['MAC_ADDR'], app.config['BROADCAST_ADDR'])
     elif bytes([response[1]]) == pcmd.nak:
         response = 'NAK'
     elif bytes([response[1]]) == pcmd.ack:
@@ -191,8 +125,26 @@ def set_scene_htpc(state):
     if command:
         app.logger.info('Command "%s" received. '
                         'Sending message: %s', command_text, command)
-        socket.send(command)
-        response = socket.recv()  # blocks until response is found
+        app.socket.send(command)
+        response = app.socket.recv()  # blocks until response is found
+        app.logger.info('Response received: %s', helpers.print_bytearray(response))
+    else:
+        app.logger.info('Invalid command. Do nothing')
+    return 'Scene set.'
+
+
+@app.route('/command/scene/goodmorning')
+@internal_only
+def set_scene_morning():
+    """Set scene to go along with morning alarm (e.g. turn on bedroom lights.)"""
+    # TO DO: make private API calls use non-blocking zmq
+    command_text = 'bedroom on'
+    command = pcmd.micro_commands.get(command_text, None)
+    if command:
+        app.logger.info('Command "%s" received. '
+                        'Sending message: %s', command_text, command)
+        app.socket.send(command)
+        response = app.socket.recv()  # blocks until response is found
         app.logger.info('Response received: %s', helpers.print_bytearray(response))
     else:
         app.logger.info('Invalid command. Do nothing')
@@ -204,6 +156,7 @@ def oauth_authorize(provider):
     """ OAUTH authorization flow. """
     # Redirect user to main page if already logged in.
     if current_user.is_authenticated:
+        app.logger.debug("Redirect authenticated user to main page.")
         return redirect(url_for('index'))
     oauth = OAuthSignIn.get_provider(provider)
     return oauth.authorize()
@@ -214,17 +167,22 @@ def oauth_callback(provider):
     """ Sign in using OAUTH, and redirect back to main page. """
     # Redirect user to main page if already logged in.
     if current_user.is_authenticated:
+        app.logger.debug("Redirect authenticated user to main page.")
         return redirect(url_for('index'))
+
     # Otherwise, attempt to sign user in using OAUTH
     oauth = OAuthSignIn.get_provider(provider)
     username, email = oauth.callback()
     if email is None:
         # Note: Google returns email but other oauth services such as Twitter do not.
+        app.logger.info('OAUTH login failed - null email received.')
         flash('Authentication failed.')
         return redirect(url_for('login'))
     elif not allowed_email(email):
+        app.logger.info('Unauthorised email address attempted OAUTH login.')
         flash('You are not authorised to use AmmCon.', 'error')
         return redirect(url_for('login'))
+
     # Check whether the user (email address) already exists in the database.
     user = User.query.filter_by(email=email).first()
     # Create user if necessary.
@@ -233,12 +191,29 @@ def oauth_callback(provider):
         if not username:
             username = email.split('@')[0]
         # Create user object
-        user = User(nickname=username, email=email)
-        # Save to database
-        db.session.add(user)
-        db.session.commit()
+        user = app.user_datastore.create_user(nickname=username, email=email)
+        # default_role = user_datastore.find_role(name="end-user")
+        # Give admin roles to preconfigured admin user if not already given
+        if email == app.config['ADMIN_ACCOUNT']:
+            app.user_datastore.add_role_to_user(user, 'admin')
+        else:
+            app.user_datastore.add_role_to_user(user, 'end-user')
+        # Commit to database
+        app.db.session.commit()
+        app.logger.info('Created user for {0} with role {1}.'.format(user.email, user.roles))
+
     # Log in the user, and remember them for their next visit unless they log out.
     login_user(user, remember=True)
+
+    @after_this_request
+    # Need to call datastore.commit() after directly using login_user function to
+    # make sure the Flask-Security trackable fields are saved to the datastore.
+    # See: https://github.com/mattupstate/flask-security/pull/567
+    def save_user(response):
+        app.user_datastore.commit()
+        app.logger.debug('Saved user {0} to database.'.format(user.email))
+        return response
+
     return redirect(url_for('index'))
 
 
@@ -246,6 +221,7 @@ def oauth_callback(provider):
 def login():
     """Serve login page if not authenticated."""
     if current_user.is_authenticated:
+        app.logger.debug("Redirect authenticated user to main page.")
         return redirect(url_for('index'))
     return render_template('login.html')
 
@@ -258,15 +234,29 @@ def logout():
     return redirect(url_for('login'))
 
 
-@app.before_request
-def make_session_permanent():
-    app.logger.debug('Set session to permanent before request.')
-    session.permanent = True
+# Removing for now. This was causing Flask to Set-Cookie to everything, including when serving static files.
+# Originally added this so that user won't have to relogin between browser/device restarts, but seems like the cookies
+# will last long enough without this: logged in on 20161209 00:29, cookie expiry date set to 20171209 15:29.
+# @app.before_request
+# def make_session_permanent():
+#    app.logger.debug('Set session to permanent before request.')
+#    session.permanent = True
 
 
 @app.before_first_request
 def setup():
     app.logger.debug('This is before first request')
+    # Create any SQLAlchemy database tables that do not already exist
+    try:
+        app.db.create_all()
+    except Exception as e:
+        app.logger.error(e, exc_info=e)
+
+    # Create the Roles "admin" and "end-user" -- unless they already exist
+    app.user_datastore.find_or_create_role(name='admin', description='Administrator')
+    app.user_datastore.find_or_create_role(name='end-user', description='End user')
+
+    app.db.session.commit()
 
 
 @app.errorhandler(400)
@@ -312,6 +302,7 @@ def allowed_email(email):
     else:
         app.logger.info('Unauthorised user login attempt.')
     return False
+
 
 if __name__ == '__main__':
     # Setup SSL certificate for Flask to use when running the Flask dev server
