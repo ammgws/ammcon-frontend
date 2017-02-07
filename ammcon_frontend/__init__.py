@@ -14,8 +14,6 @@ from ammcon_frontend.models import db, User, Role
 # Create and configure Flask app
 app = Flask(__name__.split('.')[0], instance_path=LOCAL_PATH, instance_relative_config=True)
 
-print(app.instance_path)
-
 if os.environ.get('AMMCON_MODE') not in ['config.Production', 'config.Development', 'config.Testing']:
     # If environment variable not set or invalid, load production config by default.
     config_name = 'config.Production'
