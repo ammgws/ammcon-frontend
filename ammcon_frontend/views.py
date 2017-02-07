@@ -12,9 +12,9 @@ from flask_security import (current_user, login_required, login_user, logout_use
 import ammcon.h_bytecmds as pcmd
 import ammcon.helpers as helpers
 from ammcon.templogger import Session, Device, Temperature, TemperatureSchema
-from webapp import app
-from webapp.auth import OAuthSignIn
-from webapp.models import User, Log
+from ammcon_frontend import app
+from ammcon_frontend.auth import OAuthSignIn
+from ammcon_frontend.models import User, Log
 
 
 def internal_only(f):

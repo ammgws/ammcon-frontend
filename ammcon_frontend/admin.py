@@ -4,8 +4,8 @@ from flask_admin.contrib import sqla
 from flask_security import current_user
 # Ammcon imports
 from ammcon.templogger import Device, Temperature, Session
-from webapp import app, db
-from webapp.models import Log, Role, User
+from ammcon_frontend import app, db
+from ammcon_frontend.models import Log, Role, User
 
 
 # Customized User model for Flask-Admin

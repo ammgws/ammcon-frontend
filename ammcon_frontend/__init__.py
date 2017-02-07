@@ -8,8 +8,8 @@ from flask import Flask
 from flask_security import Security, SQLAlchemyUserDatastore
 from werkzeug.contrib.fixers import ProxyFix
 # Ammcon imports (note views are imported below after app instance is created)
-from webapp.config import LOCAL_PATH, LOG_PATH
-from webapp.models import db, User, Role
+from ammcon_frontend.config import LOCAL_PATH, LOG_PATH
+from ammcon_frontend.models import db, User, Role
 
 # Create and configure Flask app
 app = Flask(__name__, instance_path=LOCAL_PATH, instance_relative_config=True)
@@ -44,7 +44,7 @@ app.security = Security(app, app.user_datastore)
 
 # import views after app instance is instantiated to avoid circular reference
 # noinspection PyPep8
-from webapp import admin, views
+from ammcon_frontend import admin, views
 
 # Configure loggers
 if not os.path.exists(LOG_PATH):
