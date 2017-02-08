@@ -59,7 +59,7 @@ def create_device(deviceid):
 
 @app.route('/graph')
 def graph_temps():
-    start_datetime = dt.datetime.utcnow() - dt.timedelta(minutes=5)
+    start_datetime = dt.datetime.utcnow() - dt.timedelta(hours=24)
     end_datetime = dt.datetime.utcnow() - dt.timedelta(minutes=0)
 
     query = Session().query(Temperature).filter(Temperature.datetime.between(start_datetime, end_datetime))
@@ -75,6 +75,16 @@ def graph_temps():
 @app.route('/graphpage')
 def graph_page():
     return render_template('graph.html')
+
+
+@app.route('/sidepanel')
+def sidepanel():
+    return render_template('side_panel.html')
+
+
+@app.route('/commandmenu')
+def commandmenu():
+    return render_template('command_menu.html')
 
 
 @app.route('/')
@@ -217,7 +227,7 @@ def oauth_callback(provider):
 
     # Otherwise, attempt to sign user in using OAUTH
     oauth = OAuthSignIn.get_provider(provider)
-    username, email = oauth.callback()
+    username, email, photo_url = oauth.callback()
     if email is None:
         # Note: Google returns email but other oauth services such as Twitter do not.
         app.logger.info('OAUTH login failed - null email received.')
@@ -236,7 +246,7 @@ def oauth_callback(provider):
         if not username:
             username = email.split('@')[0]
         # Create user object
-        user = app.user_datastore.create_user(nickname=username, email=email)
+        user = app.user_datastore.create_user(nickname=username, email=email, photo_url=photo_url)
         # default_role = user_datastore.find_role(name="end-user")
         # Give admin roles to preconfigured admin user if not already given
         if email == app.config['ADMIN_ACCOUNT']:

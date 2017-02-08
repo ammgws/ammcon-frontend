@@ -70,5 +70,7 @@ class GoogleSignIn(OAuthSignIn):
             # http://lucumr.pocoo.org/2014/1/5/unicode-in-2-and-3/
         )
         me = oauth_session.get('').json()
+
         return (me['name'],
-                me['email'])
+                me['email'],
+                me['picture'])

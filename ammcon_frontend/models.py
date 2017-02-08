@@ -59,6 +59,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(255), nullable=False, unique=True)
     password = db.Column(db.String(255), default='unused')
     nickname = db.Column(db.String(64), nullable=False)
+    photo_url = db.Column(db.String(255))
     active = db.Column(db.Boolean())
     access_revoked = db.Column(db.Boolean(), default=False)
 

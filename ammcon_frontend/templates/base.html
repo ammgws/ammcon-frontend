@@ -1,47 +1,95 @@
 <!DOCTYPE html>
-  <head>
-    {%- block head %}
-    <title>AmmCon</title>
-    <meta charset="UTF-8">
+    <head>
+        {%- block head %}
+        <title>AmmCon</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
-    {# Load Bootstrap 3.3.7 compiled and minified CSS from CDN #}
-    {# COMMENTED OUT AS STILL USING JQUERY MOBILE #}
-    {# <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"> #}
-    {# <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script> #}
+        <script type="text/javascript">
+            var $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+        </script>
 
-    {# Load JQuery Mobile CSS from Google CDN #}
-    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.css">
-    {#- https://fonts.google.com/specimen/Roboto?selection.family=Roboto:400,500&query=roboto #}
-    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500" rel="stylesheet">
-    <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/style.css') }}">
-    {# Load jQuery framework from Google CDN, see https://developers.google.com/speed/libraries/ -#}
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"
-            integrity="sha256-wS9gmOZBqsqWxgIVgA8Y9WcQOa7PgSIX+rPA0VL2rbQ= sha384-EaUkI/FiMJtEXWAl0dCczvbFvjfzsIF1UNKGJvu9p5JIG71Kih7/kQJvYbBL7HOn sha512-jGR1T3dQerLCSm/IGEGbndPwzszJBlKQ5Br9vuB0Pw2iyxOy+7AK+lJcCC8eaXyz/9du+bkCy4HXxByhxkHf+w=="
-            crossorigin="anonymous"></script>
-    {# Local fallback for jQuery #}
-    <script>window.jQuery || document.write('<script src="{{ url_for('static', filename='js/jquery.min.js') }}"><\/script>')</script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.js"
-            integrity="sha256-MkfSkbXhZoQ1CyPwjC30mPfLF8iKF5n564n9WvCLX4E= sha384-XEn4bZ9g8ia7KJWyaf3o/ADO5s2pqwtDl1MdxgCZ9x6rm5QICw5Zk2+vwIJnAeFD sha512-vJbF+28+60KlC84fvWs/Z2QynTmqi3nD0hmMMDqQnBKYdmUdP6UzNOFCHf651Ux8TDMyitBWcWUCKDgKxtVpBA=="
-            crossorigin="anonymous"></script>
-    {# Local fallback for jQuery Mobile #}
-    <script>window.mobile || document.write('<script src="{{ url_for('static', filename='js/jquery.mobile.min.js') }}"><\/script>')</script>
-    <script type="text/javascript">
-      var $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
-    </script>
-    <!-- favicons -->
-    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicon/apple-touch-icon.png') }}">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon/favicon-32x32.png') }}" sizes="32x32">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon/favicon-16x16.png') }}" sizes="16x16">
-    {# Android Homescreen app, see https://developer.chrome.com/multidevice/android/installtohomescreen #}
-    {# manifest.json format: see https://developer.mozilla.org/en-US/docs/Web/Manifest #}
-    <link rel="manifest" href="{{ url_for('static', filename='favicon/manifest.json') }}">
-    <link rel="mask-icon" href="{{ url_for('static', filename='favicon/safari-pinned-tab.svg') }}" color="#5bbad5">
-    <link rel="theme-color" href="{{ url_for('static', filename='favicon/safari-pinned-tab.svg') }}" content="#b900bd">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    {% endblock head %}
-  </head>
-  <body>
-    {% block content %}{% endblock content %}
-  </body>
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.3.0/css/font-awesome.min.css" />
+
+        {# Load JQuery Mobile CSS from Google CDN. (nativeDroid2 uses 1.4.5 as of v2.0.3) #}
+        <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.css">
+
+		<link rel="stylesheet" href="{{ url_for('static', filename='nativeDroid2/vendor/waves/waves.min.css') }}"></linkscript>
+		<link rel="stylesheet" href="{{ url_for('static', filename='nativeDroid2/vendor/wow/animate.css') }}"></linkscript>
+        <link rel="stylesheet" href="{{ url_for('static', filename='nativeDroid2/css/nativedroid2.css') }}"></linkscript>
+
+        <style>
+            /* Prevent FOUC */
+            body { opacity: 0; }
+        </style>
+
+        <!-- favicons -->
+        <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicon/apple-touch-icon.png') }}">
+        <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon/favicon-32x32.png') }}" sizes="32x32">
+        <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon/favicon-16x16.png') }}" sizes="16x16">
+
+        <link rel="mask-icon" href="{{ url_for('static', filename='favicon/safari-pinned-tab.svg') }}" color="#5bbad5">
+        <link rel="theme-color" href="{{ url_for('static', filename='favicon/safari-pinned-tab.svg') }}" content="#b900bd">
+
+        {# Android Homescreen app, see https://developer.chrome.com/multidevice/android/installtohomescreen #}
+        {# manifest.json format: see https://developer.mozilla.org/en-US/docs/Web/Manifest #}
+        <link rel="manifest" href="{{ url_for('static', filename='favicon/manifest.json') }}">
+
+        <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/ammcon.css') }}">
+        {% endblock head %}
+    </head>
+    <body>
+        {# <div data-role="page" data-theme="b"> -#}
+        <div data-role="page">
+            <nd2-include data-src="{{ url_for('sidepanel') }}"></nd2-include>
+
+            {% block premain %}
+            {% endblock premain %}
+
+            <div data-role="header" data-position="fixed" class="wow fadeIn">
+                <a href="#leftpanel" class="ui-btn ui-btn-left wow fadeIn" data-wow-delay='0.8s'><i class="zmdi zmdi-menu"></i></a>
+                <a href="#" class="ui-btn ui-btn-right wow fadeIn" data-wow-delay='0.8s'><i class="zmdi zmdi-arrow-back"></i></a>
+                <h1 class="wow fadeIn" data-wow-delay='0.4s'>{% block pagetitle %}{% endblock pagetitle %}</h1>
+            </div>
+
+            <div role="main" class="ui-content wow fadeIn" data-inset="false" data-wow-delay="0.2s">
+            {% block content %}
+
+            {% endblock content %}
+            </div>
+        </div>
+
+        {% block post_body_javascript %}
+
+        {# Load jQuery framework from Google CDN, see https://developers.google.com/speed/libraries/ -#}
+        {# Calculated hashes using https://report-uri.io/home/sri_hash -#}
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"
+                integrity="sha256-ImQvICV38LovIsvla2zykaCTdEh1Z801Y+DSop91wMU= sha384-8gBf6Y4YYq7Jx97PIqmTwLPin4hxIzQw5aDmUg/DDhul9fFpbbLcLh3nTIIDJKhx sha512-AFwxAkWdvxRd9qhYYp1qbeRZj6/iTNmJ2GFwcxsMOzwwTaRwz2a/2TX225Ebcj3whXte1WGQb38cXE5j7ZQw3g=="
+                crossorigin="anonymous"></script>
+        {# Local fallback for jQuery #}
+        <script>window.jQuery || document.write('<script src="{{ url_for('static', filename='js/jquery.min.js') }}"><\/script>')</script>
+
+        {# Load jQuery UI from Google CDN, see https://developers.google.com/speed/libraries/ -#}
+        <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"
+                integrity="sha256-xNjb53/rY+WmG+4L6tTl9m6PpqknWZvRt0rO1SRnJzw= sha384-YWP9O4NjmcGo4oEJFXvvYSEzuHIvey+LbXkBNJ1Kd0yfugEZN9NCQNpRYBVC1RvA sha512-BHDCWLtdp0XpAFccP2NifCbJfYoYhsRSZOUM3KnAxy2b/Ay3Bn91frud+3A95brA4wDWV3yEOZrJqgV8aZRXUQ=="
+                crossorigin="anonymous"></script>
+        {# Local fallback for jQuery UI#}
+        <script>window.mobile || document.write('<script src="{{ url_for('static', filename='js/jquery-ui.min.js') }}"><\/script>')</script>
+
+        {# Load jQuery Mobile framework from Google CDN, see https://developers.google.com/speed/libraries/ -#}
+        <script src="https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.js"
+                integrity="sha256-MkfSkbXhZoQ1CyPwjC30mPfLF8iKF5n564n9WvCLX4E= sha384-XEn4bZ9g8ia7KJWyaf3o/ADO5s2pqwtDl1MdxgCZ9x6rm5QICw5Zk2+vwIJnAeFD sha512-vJbF+28+60KlC84fvWs/Z2QynTmqi3nD0hmMMDqQnBKYdmUdP6UzNOFCHf651Ux8TDMyitBWcWUCKDgKxtVpBA=="
+                crossorigin="anonymous"></script>
+        {# Local fallback for jQuery Mobile #}
+        <script>window.mobile || document.write('<script src="{{ url_for('static', filename='js/jquery.mobile.min.js') }}"><\/script>')</script>
+
+        <script src="{{ url_for('static', filename='nativeDroid2/vendor/waves/waves.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='nativeDroid2/vendor/wow/wow.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='nativeDroid2/js/nativedroid2.js') }}"></script>
+        <script src="{{ url_for('static', filename='nativeDroid2/nd2settings.js') }}"></script>
+
+        {% endblock post_body_javascript %}
+
+    </body>
 </html>

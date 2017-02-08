@@ -1,0 +1,67 @@
+/* ↓↓↓　Element positioning　for house layout image ↓↓↓　*/
+img.layout_bg {
+ width: 100%;
+ height: auto;
+}
+img.layout_sub {
+ position: absolute;
+}
+
+.layout {
+ position: relative;
+}
+
+p.temp {
+ position: absolute;
+ width: 100%;
+ color: black
+}
+p#templiving {
+ top: 160px;
+ left: 15px;
+}
+p#tempbedroom2 {
+ top: 297px;
+ left: 15px;
+}
+p#tempbedroom3 {
+ top: 150px;
+ left: 225px;
+}
+img#living_tv {
+ top: 70px;
+ left: 90px;
+}
+img#living_light1 {
+ top: 115px;
+ left: 50px;
+}
+img#living_light2 {
+ top: 215px;
+ left: 50px;
+}
+img#bedroom1_light {
+ top: 130px;
+ left: 160px;
+}
+img#bedroom2_light {
+ top: 330px;
+ left: 90px;
+}
+img#bedroom3_light {
+ top: 105px;
+ left: 255px;
+}
+img#living_aircon {
+ top: 70px;
+ left: 14px;
+}
+img#bedroom2_aircon {
+ top: 380px;
+ left: 15px;
+}
+img#bedroom3_aircon {
+ top: 70px;
+ left: 247px;
+}
+/* ↑↑↑　Element positioning　for house layout image ↑↑↑　*/
