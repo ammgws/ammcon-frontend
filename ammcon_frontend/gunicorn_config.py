@@ -1,4 +1,4 @@
-from ammcon_frontend.config import LOG_PATH
+from ammcon_frontend.config import LOCAL_PATH, LOG_PATH
 import os.path
 
 # Sample Gunicorn configuration file modified for use with AmmCon
@@ -30,7 +30,8 @@ import os.path
 
 # for when running with nginx:
 # gunicorn will get requests from nginx using this unix socket
-bind = 'unix:ammcon.sock'
+# TO DO: move sock file to ammcon LOCAL_PATH
+bind = 'unix:{}'.format(os.path.join(LOCAL_PATH, 'ammcon.sock'))
 
 # Worker processes
 #
