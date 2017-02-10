@@ -158,7 +158,7 @@ timeout = 30
 # setup log files relative to AmmCon script dir
 loglevel = 'warn'
 accesslog = os.path.join(LOG_PATH, 'gunicorn_access.log')
-errorlog = os.path.join(LOG_PATH, 'logs/gunicorn_error.log')
+errorlog = os.path.join(LOG_PATH, 'gunicorn_error.log')
 # access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
 
 #
