@@ -1,3 +1,6 @@
+from ammcon_frontend.config import LOG_PATH
+import os.path
+
 # Sample Gunicorn configuration file modified for use with AmmCon
 
 #
@@ -154,8 +157,8 @@ timeout = 30
 
 # setup log files relative to AmmCon script dir
 loglevel = 'warn'
-accesslog = 'logs/gunicorn_access.log'
-errorlog = 'logs/gunicorn_error.log'
+accesslog = os.path.join(LOG_PATH, 'gunicorn_access.log')
+errorlog = os.path.join(LOG_PATH, 'logs/gunicorn_error.log')
 # access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
 
 #
