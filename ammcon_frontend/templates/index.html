@@ -20,9 +20,9 @@
     <a href="#bedroom2_aircon_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="bedroom2_aircon" src="{{ url_for('static', filename='aircon.png') }}"></a>
     <a href="#bedroom3_aircon_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="bedroom3_aircon" src="{{ url_for('static', filename='aircon.png') }}"></a>
     <a href="#tv_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="living_tv" src="{{ url_for('static', filename='tv.png') }}"></a>
-    <p class="temp" id="templiving">Temp:</p>
-    <p class="temp" id="tempbedroom2">Temp:</p>
-    <p class="temp" id="tempbedroom3">Temp:</p>
+    <p class="temp" id="templiving" title="">Temp:</p>
+    <p class="temp" id="tempbedroom2" title="">Temp:</p>
+    <p class="temp" id="tempbedroom3" title="">Temp:</p>
 </div>
 
 <div data-role="popup" id="living_light1_menu" data-theme="b">
@@ -111,7 +111,7 @@
 </ul>
 </div>
 <p>Server response: <span id="response">???</span></p>
-<p>System date: {{ date_time }}
+<p>System date: {{ momentjs(date_time).format("YYYY/MM/DD h:mm:ss a") }}
 <br />
 System uptime: {{ uptime }}</p>
 

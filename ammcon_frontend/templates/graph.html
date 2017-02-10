@@ -12,15 +12,50 @@
     <script src="{{ url_for('static', filename='js/amcharts/plugins/responsive/responsive.min.js') }}" type="text/javascript"></script>
     <!-- amCharts javascript code -->
     <script type="text/javascript">
+        AmCharts.useUTC = false;
         AmCharts.makeChart("chartdiv",
             {
                 "type": "serial",
                 "categoryField": "datetime",
-                "dataDateFormat": "YYYY-MM-DD HH:NN:SS",
+                "dataDateFormat": "YYYY-MM-DDTHH:NN:SS.QQ",
                 "theme": "black",
                 "categoryAxis": {
                     "minPeriod": "ss",
-                    "parseDates": true
+                    "parseDates": true,
+                    "dateFormats": [
+                        {
+                            "period": "fff",
+                            "format": "JJ:NN:SS"
+                        },
+                        {
+                            "period": "ss",
+                            "format": "JJ:NN:SS"
+                        },
+                        {
+                            "period": "hh",
+                            "format": "JJ:NN"
+                        },
+                        {
+                            "period": "DD",
+                            "format": "MMM DD"
+                        },
+                        {
+                            "period": "WW",
+                            "format": "MMM DD"
+                        },
+                        {
+                            "period": "MM",
+                            "format": "MMMM"
+                        },
+                        {
+                            "period": "YYYY",
+                            "format": "YYYY"
+                        },
+                        {
+                            "period": "mm",
+                            "format": "JJ:NN"
+                        }
+                    ],
                 },
                 "chartCursor": {
                     "enabled": true,
@@ -33,6 +68,7 @@
                 "graphs": [
                     {
                         "bullet": "round",
+                        "connect": false,
                         "id": "AmGraph-1",
                         "title": "Temperature",
                         "valueAxis": "ValueAxis-1",
@@ -52,12 +88,18 @@
                 "valueAxes": [
                     {
                         "id": "ValueAxis-1",
-                        //"title": "degC"
+                        "unit": "℃",
+                        "minimum": 0,
+                        "maximum": 40,
+                        //"title": "degC",
+                        //"minorTickLength": 1
                     },
                     {
                         "id": "ValueAxis-2",
+                        "unit": "%",
                         //"title": "%RH",
-                        "position": "right"
+                        "position": "right",
+                        //"minorTickLength": 1
                     }
                 ],
                 "allLabels": [],
@@ -69,13 +111,15 @@
                 "titles": [
                     {
                         "id": "Title-1",
-                        "size": 15,
+                        "size": 14,
                         "text": "Living Room Temperature"
                     }
                 ],
                 "dataLoader": {
                     "url": "{{ url_for('graph_temps') }}",
                     "format": "json",
+                    "async": true,
+                    "showCurtain": true,
                     "postProcess": function(data) {
                         //remove root object 'data' otherwise amcharts won't find the data
                         return data.data;

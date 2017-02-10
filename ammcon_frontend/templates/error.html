@@ -1,16 +1,7 @@
 {% extends "base.html" %}
 
-{%- block head %}
-  {{ super() }} {# Render the default head contents #}
-  <script src="{{ url_for('static', filename='js/ammcon_general.js') }}"></script>
-{%- endblock head %}
-
 {%- block content %}
-<div data-role="header">
-    <h1>AmmCon</h1>
-</div>
-
-<p> An error occurred. Try again later.</p>
+    <p> An error occurred. Try again later.</p>
 {% endblock content %}
 
 
