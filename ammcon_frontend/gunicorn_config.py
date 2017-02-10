@@ -27,7 +27,7 @@
 
 # for when running with nginx:
 # gunicorn will get requests from nginx using this unix socket
-bind = 'unix:ammcon-frontend.sock'
+bind = 'unix:ammcon.sock'
 
 # Worker processes
 #
@@ -77,7 +77,7 @@ bind = 'unix:ammcon-frontend.sock'
 #       A positive integer. Generally set in the 1-5 seconds range.
 #
 
-workers = 3
+workers = 1
 timeout = 30
 # worker_class = 'sync'
 # worker_connections = 1000
