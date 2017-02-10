@@ -84,6 +84,7 @@ class Development(BaseConfig):
     SECRET_KEY = urandom(24)
     DEBUG = True
     LOG_LEVEL = 'DEBUG'
+    ALLOWED_IP_ADDR = ['127.0.0.1']
 
     # Derestrict HTTPS specific settings so that we can dev with HTTP
     REMEMBER_COOKIE_SECURE = False
