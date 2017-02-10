@@ -30,8 +30,8 @@ $(function() {
     temp_command = $(this).attr("id");
     // for debugging purposes:
     //alert(temp_command)
-    $.getJSON($SCRIPT_ROOT + '/command', {
-      command: temp_command
+    $.getJSON($SCRIPT_ROOT + '/data/1', {
+
     }, function(data) {
       // redirect back to homepage to reauthorise
       if (data.redirect) {
@@ -39,7 +39,9 @@ $(function() {
         //$(location).attr('href', data.redirect));
       }
       else {
-        $("#" + temp_command).text(data.response);
+        //window.console&&console.log(moment(data.datetime).format("Y/mm/dd_HH:MM:SS"));
+        $("#" + temp_command).text(data.temperature + "°C " + data.humidity + "%");
+        $("#" + temp_command).attr("title", "Data from " + moment(data.datetime).format("Y/MM/DD HH:MM:SS"));
       }
     });
     return false;
