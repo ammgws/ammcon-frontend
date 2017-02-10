@@ -8,6 +8,7 @@ from functools import wraps
 # Third party imports
 from flask import (abort, after_this_request, flash, json, jsonify, render_template, redirect, request, url_for)
 from flask_security import (current_user, login_required, login_user, logout_user)
+from sqlalchemy import desc
 # Ammcon imports
 import ammcon.h_bytecmds as pcmd
 import ammcon.helpers as helpers
@@ -34,14 +35,17 @@ def internal_only(f):
 @app.route('/test/<deviceid>')
 @internal_only
 def test_page(deviceid):
-    start_datetime = dt.datetime.utcnow() - dt.timedelta(minutes=5)
+    start_datetime = dt.datetime.utcnow() - dt.timedelta(minutes=9999)
     end_datetime = dt.datetime.utcnow() - dt.timedelta(minutes=0)
     query = Session().query(Temperature).filter(Temperature.device_id == deviceid).filter(Temperature.datetime.between(start_datetime, end_datetime))
     print(query)
     results = query.all()
     print(results)
 
-    return "ohk"
+    temp_schema = TemperatureSchema(only=('datetime', 'temperature', 'humidity'))
+    temps = temp_schema.dump(query, many=True).data
+
+    return jsonify(temps)
 
 
 # TO DO: interface for creating new devices
@@ -59,17 +63,28 @@ def create_device(deviceid):
 
 @app.route('/graph')
 def graph_temps():
+    """ Return data to use for plotting temperature/humidity values."""
     start_datetime = dt.datetime.utcnow() - dt.timedelta(hours=24)
     end_datetime = dt.datetime.utcnow() - dt.timedelta(minutes=0)
 
     query = Session().query(Temperature).filter(Temperature.datetime.between(start_datetime, end_datetime))
-    results = query.all()
-    print(results)
+    #results = query.all()
 
     temp_schema = TemperatureSchema(only=('datetime', 'temperature', 'humidity'))
     temps = temp_schema.dump(query, many=True).data
 
     return jsonify(temps)
+
+
+@app.route('/data/<deviceid>')
+def env_data_json(deviceid):
+    """ Return temperature/humidity values for the specified device."""
+
+    query = Session().query(Temperature).filter(Temperature.device_id == deviceid).order_by(desc(Temperature.datetime)).first()
+    temp_schema = TemperatureSchema(only=('datetime', 'temperature', 'humidity'))
+    temp = temp_schema.dump(query).data
+
+    return jsonify(temp)
 
 
 @app.route('/graphpage')
@@ -91,15 +106,13 @@ def commandmenu():
 @login_required
 def index():
     """ Main page for Ammcon."""
-    current_date_time = dt.datetime.now()
-    date_time_str = current_date_time.strftime('%Y-%m-%d %H:%M')
 
     with open('/proc/uptime', 'r') as file:
         uptime_seconds = int(float(file.readline().split()[0]))
         uptime_str = str(dt.timedelta(seconds=uptime_seconds))
 
     template_data = {
-        'date_time': date_time_str,
+        'date_time': dt.datetime.utcnow(),
         'uptime': uptime_str
     }
 
