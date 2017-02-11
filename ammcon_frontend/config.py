@@ -2,7 +2,6 @@ import os.path
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 LOCAL_PATH = os.environ.get('AMMCON_LOCAL', default=os.path.join(os.path.expanduser("~"), '.ammcon'))
-print("Ammcon config dir: {}".format(LOCAL_PATH))
 LOG_PATH = os.path.join(LOCAL_PATH, 'logs')
 
 

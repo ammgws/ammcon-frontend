@@ -138,7 +138,9 @@ def run_command():
     if command:
         app.logger.info('Command "%s" received. '
                         'Sending message: %s', command_text, command)
+        print("ohk1")
         app.socket.send(command)
+        print("ohk2")
         response = app.socket.recv()  # blocks until response is found
         app.logger.info('Response received: %s', helpers.print_bytearray(response))
     elif command_text == 'htpc wol':
