@@ -139,9 +139,19 @@ def run_command():
         app.logger.info('Command "%s" received. '
                         'Sending message: %s', command_text, command)
         app.logger.debug("ohk1")
-        app.socket.send(command)
+        print("ohk1")
+        message_tracker = app.socket.send(command, copy=False, track=True)
+        print(message_tracker)
+        app.logger.debug(message_tracker)
+        n = 0
+        while not message_tracker.done:
+            print("yarp{}{}".format(command_text, n))
+            app.logger.info("yarp{}{}".format(command_text, n))
+            n += 1
+        print("ohk2")
         app.logger.debug("ohk2")
         response = app.socket.recv()  # blocks until response is found
+        app.logger.debug("ohk3")
         app.logger.info('Response received: %s', helpers.print_bytearray(response))
     elif command_text == 'htpc wol':
         response = helpers.send_magic_packet(app.config['MAC_ADDR'], app.config['BROADCAST_ADDR'])

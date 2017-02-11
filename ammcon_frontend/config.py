@@ -81,6 +81,7 @@ class Production(BaseConfig):
 class Development(BaseConfig):
     from os import urandom
     SECRET_KEY = urandom(24)
+
     DEBUG = True
     LOG_LEVEL = 'DEBUG'
     ALLOWED_IP_ADDR = ['127.0.0.1']

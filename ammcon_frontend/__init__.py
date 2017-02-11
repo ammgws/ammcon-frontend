@@ -20,7 +20,6 @@ if os.environ.get('AMMCON_MODE') not in ['config.Production', 'config.Developmen
     config_name = 'config.Production'
 else:
     config_name = os.environ['AMMCON_MODE']
-print("Loading config: {}".format(config_name))
 # Load default config file from package dir
 app.config.from_object('ammcon_frontend.' + config_name)
 # Override default config values with user-edited config from ammcon local folder
@@ -66,6 +65,7 @@ flask_log_handler.setFormatter(log_format)
 app.logger.addHandler(flask_log_handler)
 app.logger.setLevel(level=app.config['LOG_LEVEL'])
 app.logger.info('############### Starting Ammcon Web UI ###############')
+app.logger.info('Loading config: {}'.format(config_name))
 
 # Connect to zeroMQ REQ socket, used to communicate with serial port
 # to do: handle disconnections somehow (though if background serial worker
