@@ -6,8 +6,8 @@ Views that handle requests.
 import datetime as dt
 from functools import wraps
 # Third party imports
-from flask import (abort, after_this_request, flash, json, jsonify, render_template, redirect, request, url_for)
-from flask_security import (current_user, login_required, login_user, logout_user)
+from flask import (abort, json, jsonify, render_template, redirect, request, url_for)
+from flask_security import (current_user, login_required, logout_user)
 from sqlalchemy import desc
 import zmq
 # Ammcon imports
@@ -15,8 +15,7 @@ import ammcon.h_bytecmds as pcmd
 import ammcon.helpers as helpers
 from ammcon.templogger import Session, Device, Temperature, TemperatureSchema
 from ammcon_frontend import app
-from ammcon_frontend.auth import OAuthSignIn
-from ammcon_frontend.models import User, Log
+from ammcon_frontend.models import Log
 
 
 def internal_only(f):
@@ -100,6 +99,7 @@ def sidepanel():
 
 @app.route('/commandmenu')
 def commandmenu():
+    """ Serve command menu HTML. TO DO: send list of devices/commands?"""
     return render_template('command_menu.html')
 
 
@@ -139,20 +139,19 @@ def run_command():
     if command:
         app.logger.info('Command "%s" received. '
                         'Sending message: %s', command_text, command)
-        app.logger.debug("ohk1")
-        print("ohk1")
-        message_tracker = app.socket.send(command, copy=False, track=True)
-        print(message_tracker)
+        try:
+            message_tracker = app.socket.send(command, copy=False, track=True)
+        except zmq.ZMQError:
+            app.logger.error("ZMQ send failed")
         app.logger.debug(message_tracker)
+
+        # Added (temporarily) for debugging purposes
         n = 0
         while not message_tracker.done:
-            print("yarp{}{}".format(command_text, n))
-            app.logger.info("yarp{}{}".format(command_text, n))
+            app.logger.debug("yarp{}{}".format(command_text, n))
             n += 1
-        print("ohk2")
-        app.logger.debug("ohk2")
+
         response = app.socket.recv()  # blocks until response is found
-        app.logger.debug("ohk3")
         app.logger.info('Response received: %s', helpers.print_bytearray(response))
     elif command_text == 'htpc wol':
         response = helpers.send_magic_packet(app.config['MAC_ADDR'], app.config['BROADCAST_ADDR'])
@@ -232,72 +231,6 @@ def set_scene_morning():
     return 'Scene set.'
 
 
-@app.route('/authorize/<provider>')
-def oauth_authorize(provider):
-    """ OAUTH authorization flow. """
-    # Redirect user to main page if already logged in.
-    if current_user.is_authenticated:
-        app.logger.debug("Redirect authenticated user to main page.")
-        return redirect(url_for('index'))
-    oauth = OAuthSignIn.get_provider(provider)
-    return oauth.authorize()
-
-
-@app.route('/callback/<provider>')
-def oauth_callback(provider):
-    """ Sign in using OAUTH, and redirect back to main page. """
-    # Redirect user to main page if already logged in.
-    if current_user.is_authenticated:
-        app.logger.debug("Redirect authenticated user to main page.")
-        return redirect(url_for('index'))
-
-    # Otherwise, attempt to sign user in using OAUTH
-    oauth = OAuthSignIn.get_provider(provider)
-    username, email, photo_url = oauth.callback()
-    if email is None:
-        # Note: Google returns email but other oauth services such as Twitter do not.
-        app.logger.info('OAUTH login failed - null email received.')
-        flash('Authentication failed.')
-        return redirect(url_for('login'))
-    elif not allowed_email(email):
-        app.logger.info('Unauthorised email address attempted OAUTH login.')
-        flash('You are not authorised to use AmmCon.', 'error')
-        return redirect(url_for('login'))
-
-    # Check whether the user (email address) already exists in the database.
-    user = User.query.filter_by(email=email).first()
-    # Create user if necessary.
-    if not user:
-        # Use first part of email if name is not available.
-        if not username:
-            username = email.split('@')[0]
-        # Create user object
-        user = app.user_datastore.create_user(nickname=username, email=email, photo_url=photo_url)
-        # default_role = user_datastore.find_role(name="end-user")
-        # Give admin roles to preconfigured admin user if not already given
-        if email == app.config['ADMIN_ACCOUNT']:
-            app.user_datastore.add_role_to_user(user, 'admin')
-        else:
-            app.user_datastore.add_role_to_user(user, 'end-user')
-        # Commit to database
-        app.db.session.commit()
-        app.logger.info('Created user for {0} with role {1}.'.format(user.email, user.roles))
-
-    # Log in the user, and remember them for their next visit unless they log out.
-    login_user(user, remember=True)
-
-    @after_this_request
-    # Need to call datastore.commit() after directly using login_user function to
-    # make sure the Flask-Security trackable fields are saved to the datastore.
-    # See: https://github.com/mattupstate/flask-security/pull/567
-    def save_user(response):
-        app.user_datastore.commit()
-        app.logger.debug('Saved user {0} to database.'.format(user.email))
-        return response
-
-    return redirect(url_for('index'))
-
-
 @app.route('/login')
 def login():
     """Serve login page if not authenticated."""
@@ -347,56 +280,6 @@ def setup():
     # socket.setsockopt(zmq.RCVTIMEO, 500)  # timeout in ms
     app.socket.connect('tcp://localhost:5555')
     app.logger.info('############### Connected to zeroMQ server ###############')
-    from ammcon.helpers import print_bytearray
-    command = pcmd.micro_commands.get('tv on', None)
-    app.socket.send(command)
-    response = app.socket.recv()  # blocks until response is found
-    app.logger.info('yip received: %s', print_bytearray(response))
-
-
-@app.errorhandler(400)
-def key_error(e):
-    """Handle invalid requests. Serves a generic error page."""
-    # pass exception instance in exc_info argument
-    app.logger.warning('Invalid request resulted in KeyError', exc_info=e)
-    return render_template('error.html'), 400
-
-
-@app.errorhandler(403)
-def unauthorized_access(error):
-    """Handle 403 errors. Serves a generic error page."""
-    app.logger.warning('Access forbidden: %s (Error message = %s)', request.path, error)
-    return render_template('error.html'), 403
-
-
-@app.errorhandler(404)
-def page_not_found(error):
-    """Handle 404 errors. Only this error serves a non-generic page."""
-    app.logger.warning('Page not found: %s (Error message = %s)', request.path, error)
-    return render_template('page_not_found.html'), 404
-
-
-@app.errorhandler(500)
-def internal_server_error(e):
-    """Handle internal server errors. Serves a generic error page."""
-    app.logger.warning('An unhandled exception is being displayed to the end user', exc_info=e)
-    return render_template('error.html'), 500
-
-
-@app.errorhandler(Exception)
-def unhandled_exception(e):
-    """Handle all other errors that may occur. Serves a generic error page."""
-    app.logger.error('An unhandled exception is being displayed to the end user', exc_info=e)
-    return render_template('error.html'), 500
-
-
-def allowed_email(email):
-    """ Check if the email used to sign in is an allowed user of Ammcon. """
-    if email in app.config['ALLOWED_EMAILS']:
-        return True
-    else:
-        app.logger.info('Unauthorised user login attempt.')
-    return False
 
 
 if __name__ == '__main__':

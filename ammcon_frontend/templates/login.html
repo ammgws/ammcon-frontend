@@ -7,8 +7,18 @@
     <p><b>Error</b>: {{ message }}</p>
     {% endfor -%}
 
-    <a id="login" data-ajax="false" href="{{ url_for('oauth_authorize', provider='google') }}">
-       <img src="{{ url_for('static', filename='btn_google_signin_light_normal_web.png') }}">
-    </a>
+    <div data-role="controlgroup">
+    <button class="show-page-loading-msg" data-theme="b" data-textonly="false" data-textvisible="true" data-msgtext="Loading theme a" data-icon="arrow-r" data-iconpos="right">
+        <a id="login" data-ajax="false" href="{{ url_for('oauth.oauth_authorize', provider='google') }}">
+            <img src="{{ url_for('static', filename='btn_google_signin_light_normal_web.png') }}">
+        </a>
+    </button>
+    </div>
 {% endblock content %}
+
+{% block post_body_javascript %}
+    {{ super() }} {# Load default contents#}
+    {# Needs to load after jQuery has loaded -#}
+    <script src="{{ url_for('static', filename='js/ammcon_general.js') }}"></script>
+{% endblock post_body_javascript %}
 

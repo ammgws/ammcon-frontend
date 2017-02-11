@@ -3,11 +3,12 @@ import datetime as dt
 import logging.handlers
 import os
 # Third party imports
-import zmq
 from flask import Flask
 from flask_security import Security, SQLAlchemyUserDatastore
 from werkzeug.contrib.fixers import ProxyFix
 # Ammcon imports (note views are imported below after app instance is created)
+import ammcon_frontend.error_handlers
+import ammcon_frontend.oauth
 from ammcon_frontend.config import LOCAL_PATH, LOG_PATH
 from ammcon_frontend.models import db, User, Role
 from ammcon_frontend.momentjs import momentjs
@@ -46,6 +47,10 @@ app.security = Security(app, app.user_datastore)
 # Import views after app instance is instantiated to avoid circular reference
 # noinspection PyPep8
 from ammcon_frontend import admin, views
+
+# Register blueprints
+app.register_blueprint(error_handlers.blueprint)
+app.register_blueprint(oauth.blueprint)
 
 # Misc
 app.jinja_env.globals['momentjs'] = momentjs
