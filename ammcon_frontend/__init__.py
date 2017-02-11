@@ -75,3 +75,9 @@ app.socket = context.socket(zmq.REQ)
 # socket.setsockopt(zmq.RCVTIMEO, 500)  # timeout in ms
 app.socket.connect('tcp://localhost:5555')
 app.logger.info('############### Connected to zeroMQ server ###############')
+import ammcon.h_bytecmds as pcmd
+from ammcon.helpers import print_bytearray
+command = pcmd.micro_commands.get('tv on', None)
+app.socket.send(command)
+response = app.socket.recv()  # blocks until response is found
+app.logger.info('yip received: %s', print_bytearray(response))
