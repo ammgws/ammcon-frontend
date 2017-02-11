@@ -66,18 +66,3 @@ app.logger.addHandler(flask_log_handler)
 app.logger.setLevel(level=app.config['LOG_LEVEL'])
 app.logger.info('############### Starting Ammcon Web UI ###############')
 app.logger.info('Loading config: {}'.format(config_name))
-
-# Connect to zeroMQ REQ socket, used to communicate with serial port
-# to do: handle disconnections somehow (though if background serial worker
-# fails then we're screwed anyway)
-context = zmq.Context()
-app.socket = context.socket(zmq.REQ)
-# socket.setsockopt(zmq.RCVTIMEO, 500)  # timeout in ms
-app.socket.connect('tcp://localhost:5555')
-app.logger.info('############### Connected to zeroMQ server ###############')
-import ammcon.h_bytecmds as pcmd
-from ammcon.helpers import print_bytearray
-command = pcmd.micro_commands.get('tv on', None)
-app.socket.send(command)
-response = app.socket.recv()  # blocks until response is found
-app.logger.info('yip received: %s', print_bytearray(response))

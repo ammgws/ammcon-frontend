@@ -9,6 +9,7 @@ from functools import wraps
 from flask import (abort, after_this_request, flash, json, jsonify, render_template, redirect, request, url_for)
 from flask_security import (current_user, login_required, login_user, logout_user)
 from sqlalchemy import desc
+import zmq
 # Ammcon imports
 import ammcon.h_bytecmds as pcmd
 import ammcon.helpers as helpers
@@ -336,8 +337,21 @@ def setup():
     # Create the Roles "admin" and "end-user" -- unless they already exist
     app.user_datastore.find_or_create_role(name='admin', description='Administrator')
     app.user_datastore.find_or_create_role(name='end-user', description='End user')
-
     app.db.session.commit()
+
+    # Connect to zeroMQ REQ socket, used to communicate with serial port
+    # to do: handle disconnections somehow (though if background serial worker
+    # fails then we're screwed anyway)
+    context = zmq.Context()
+    app.socket = context.socket(zmq.REQ)
+    # socket.setsockopt(zmq.RCVTIMEO, 500)  # timeout in ms
+    app.socket.connect('tcp://localhost:5555')
+    app.logger.info('############### Connected to zeroMQ server ###############')
+    from ammcon.helpers import print_bytearray
+    command = pcmd.micro_commands.get('tv on', None)
+    app.socket.send(command)
+    response = app.socket.recv()  # blocks until response is found
+    app.logger.info('yip received: %s', print_bytearray(response))
 
 
 @app.errorhandler(400)
