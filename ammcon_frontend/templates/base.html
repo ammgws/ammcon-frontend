@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<html>
     <head>
         {%- block head %}
         <title>AmmCon</title>
@@ -9,64 +10,17 @@
             var $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
         </script>
 
+        {# Stylesheets as per order used in nativeDroid2 examples -#}
 		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.3.0/css/font-awesome.min.css" />
-
         {# Load JQuery Mobile CSS from Google CDN. (nativeDroid2 uses 1.4.5 as of v2.0.3) #}
         <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.css">
-
+        {# Other stylesheets required by nativeDroid2. Local copy only for now. -#}
 		<link rel="stylesheet" href="{{ url_for('static', filename='nativeDroid2/vendor/waves/waves.min.css') }}"></linkscript>
 		<link rel="stylesheet" href="{{ url_for('static', filename='nativeDroid2/vendor/wow/animate.css') }}"></linkscript>
         <link rel="stylesheet" href="{{ url_for('static', filename='nativeDroid2/css/nativedroid2.css') }}"></linkscript>
 
-        {# Need to load before body or moment won't be definied for use #}
-        {# Load moment.js from CDN with local fallback #}
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js"
-                integrity="sha256-Gn7MUQono8LUxTfRA0WZzJgTua52Udm1Ifrk5421zkA= sha384-KgEy7s3ThYKule8wWiu2WJkm0AmJeSLkXku5PY5X8MhVgdm8K1ebsVRKHfNfWPrR sha512-3ojOr2FvTavVymsQrQRtSXZW+6HPnPhWYtLmPbd42n7JdOUP75OqSBf91ZTbzLZb04ffqj+5am9W0bM+MDbWAQ=="
-                crossorigin="anonymous"></script>
-        <script>window.moment || document.write('<script src="{{ url_for('static', filename='js/moment/moment.min.js') }}"><\/script>')</script>
-
-        <style>
-            /* Prevent FOUC */
-            body { opacity: 0; }
-        </style>
-
-        <!-- favicons -->
-        <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}">
-        <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicon/apple-touch-icon.png') }}">
-        <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon/favicon-32x32.png') }}" sizes="32x32">
-        <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon/favicon-16x16.png') }}" sizes="16x16">
-
-        <link rel="mask-icon" href="{{ url_for('static', filename='favicon/safari-pinned-tab.svg') }}" color="#5bbad5">
-        <link rel="theme-color" href="{{ url_for('static', filename='favicon/safari-pinned-tab.svg') }}" content="#b900bd">
-
-        {# Android Homescreen app, see https://developer.chrome.com/multidevice/android/installtohomescreen #}
-        {# manifest.json format: see https://developer.mozilla.org/en-US/docs/Web/Manifest #}
-        <link rel="manifest" href="{{ url_for('static', filename='favicon/manifest.json') }}">
-
+        {# Ammcon specific CSS -#}
         <link rel=stylesheet type=text/css href="{{ url_for('static', filename='css/ammcon.css') }}">
-        {% endblock head %}
-    </head>
-    <body>
-        <div data-role="page" data-theme="a">
-            <nd2-include data-src="{{ url_for('sidepanel') }}"></nd2-include>
-
-            {% block premain %}
-            {% endblock premain %}
-
-            <div data-role="header" data-position="fixed" class="wow fadeIn">
-                <a href="#leftpanel" class="ui-btn ui-btn-left wow fadeIn" data-wow-delay='0.8s'><i class="zmdi zmdi-menu"></i></a>
-                <a href="#" class="ui-btn ui-btn-right wow fadeIn" data-wow-delay='0.8s'><i class="zmdi zmdi-arrow-back"></i></a>
-                <h1 class="wow fadeIn" data-wow-delay='0.4s'>{% block pagetitle %}{% endblock pagetitle %}</h1>
-            </div>
-
-            <div role="main" class="ui-content wow fadeIn" data-inset="false" data-wow-delay="0.2s">
-            {% block content %}
-
-            {% endblock content %}
-            </div>
-        </div>
-
-        {% block post_body_javascript %}
 
         {# Load jQuery framework from CDN with local fallback -#}
         {# Calculated hashes using https://report-uri.io/home/sri_hash -#}
@@ -87,12 +41,61 @@
                 crossorigin="anonymous"></script>
         <script>window.mobile || document.write('<script src="{{ url_for('static', filename='js/jquery.mobile.min.js') }}"><\/script>')</script>
 
+        {# nativeDroid2 scripts -#}
         <script src="{{ url_for('static', filename='nativeDroid2/vendor/waves/waves.min.js') }}"></script>
         <script src="{{ url_for('static', filename='nativeDroid2/vendor/wow/wow.min.js') }}"></script>
         <script src="{{ url_for('static', filename='nativeDroid2/js/nativedroid2.js') }}"></script>
         <script src="{{ url_for('static', filename='nativeDroid2/nd2settings.js') }}"></script>
 
-        {% endblock post_body_javascript %}
+        {# Load moment.js from CDN with local fallback #}
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js"
+                integrity="sha256-Gn7MUQono8LUxTfRA0WZzJgTua52Udm1Ifrk5421zkA= sha384-KgEy7s3ThYKule8wWiu2WJkm0AmJeSLkXku5PY5X8MhVgdm8K1ebsVRKHfNfWPrR sha512-3ojOr2FvTavVymsQrQRtSXZW+6HPnPhWYtLmPbd42n7JdOUP75OqSBf91ZTbzLZb04ffqj+5am9W0bM+MDbWAQ=="
+                crossorigin="anonymous"></script>
+        <script>window.moment || document.write('<script src="{{ url_for('static', filename='js/moment/moment.min.js') }}"><\/script>')</script>
 
+        {# Ammcon specific JS -#}
+        <script src="{{ url_for('static', filename='js/ammcon_special.js') }}"></script>
+        {# Needs to load after jQuery has loaded -#}
+        <script src="{{ url_for('static', filename='js/ammcon_general.js') }}"></script>
+
+        <style>
+            /* Prevent FOUC */
+            body { opacity: 0; }
+        </style>
+
+        <!-- favicons -->
+        <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicon/apple-touch-icon.png') }}">
+        <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon/favicon-32x32.png') }}" sizes="32x32">
+        <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon/favicon-16x16.png') }}" sizes="16x16">
+
+        <link rel="mask-icon" href="{{ url_for('static', filename='favicon/safari-pinned-tab.svg') }}" color="#5bbad5">
+        <link rel="theme-color" href="{{ url_for('static', filename='favicon/safari-pinned-tab.svg') }}" content="#b900bd">
+
+        {# Android Homescreen app, see https://developer.chrome.com/multidevice/android/installtohomescreen #}
+        {# manifest.json format: see https://developer.mozilla.org/en-US/docs/Web/Manifest #}
+        <link rel="manifest" href="{{ url_for('static', filename='favicon/manifest.json') }}">
+        {% endblock head %}
+    </head>
+    <body>
+        <div data-role="page" data-theme="a">
+            <nd2-include data-src="{{ url_for('sidepanel') }}"></nd2-include>
+
+            <div data-role="header" data-position="fixed" class="wow fadeIn">
+                <a href="#leftpanel" class="ui-btn ui-btn-left wow fadeIn" data-wow-delay='0.8s'><i class="zmdi zmdi-menu"></i></a>
+                {# <a href="#/" class="ui-btn ui-btn-right wow fadeIn" data-wow-delay='0.8s'><i class="zmdi zmdi-home"></i></a> -#}
+                <a href="#" class="ui-btn ui-btn-right wow fadeIn" data-wow-delay='0.8s'  data-rel="back"><i class="zmdi zmdi-arrow-back"></i></a>
+                <h1 class="wow fadeIn" data-wow-delay='0.4s'>{% block pagetitle %}{% endblock pagetitle %}</h1>
+            </div><!-- /header -->
+
+            <div role="main" class="ui-content wow fadeIn" data-inset="false" data-wow-delay="0.2s">
+            {% block content %}
+
+            {% endblock content %}
+            </div><!-- /content -->
+
+            <div data-role="footer">
+	        </div><!-- /footer -->
+        </div><!-- /page -->
     </body>
 </html>

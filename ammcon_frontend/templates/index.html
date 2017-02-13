@@ -116,8 +116,3 @@
 System uptime: {{ uptime }}</p>
 
 {%- endblock content %}
-
-{% block post_body_javascript %}
-    {{ super() }} {# Load default contents#}
-    <script src="{{ url_for('static', filename='js/ammcon_special.js') }}"></script>
-{% endblock post_body_javascript %}
