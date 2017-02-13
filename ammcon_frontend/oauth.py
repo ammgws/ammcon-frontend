@@ -102,7 +102,7 @@ def store_profile_picture(url):
 
     current_app.logger.debug(os.path.join('static/', output_filename))
 
-    with open(os.path.join('static/', output_filename), 'wb') as f:
+    with open(os.path.join(current_app.root_path, 'static/', output_filename), 'wb') as f:
         response.raw.decode_content = True
         shutil.copyfileobj(response.raw, f)
     return output_filename
