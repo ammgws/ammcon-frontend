@@ -18,8 +18,10 @@ def oauth_authorize(provider):
     if current_user.is_authenticated:
         current_app.logger.debug("Redirect authenticated user to main page.")
         return redirect(url_for('index'))
-    oauth = OAuthSignIn.get_provider(provider)
-    return oauth.authorize()
+    else:
+        # Otherwise redirect user to oauth authorisation url
+        oauth = OAuthSignIn.get_provider(provider)
+        return oauth.authorize()
 
 
 @blueprint.route('/callback/<provider>')
@@ -33,6 +35,7 @@ def oauth_callback(provider):
     # Otherwise, attempt to sign user in using OAUTH
     oauth = OAuthSignIn.get_provider(provider)
     username, email, photo_url = oauth.callback()
+
     if email is None:
         # Note: Google returns email but other oauth services such as Twitter do not.
         current_app.logger.info('OAUTH login failed - null email received.')
@@ -97,7 +100,7 @@ def store_profile_picture(url):
     response = requests.get(url, stream=True)
     output_filename = url.replace(':', '').replace('/', '').replace('.', '') + '.jpg'
 
-    print(os.path.join('static/', output_filename))
+    current_app.logger.debug(os.path.join('static/', output_filename))
 
     with open(os.path.join('static/', output_filename), 'wb') as f:
         response.raw.decode_content = True
