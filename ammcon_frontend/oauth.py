@@ -1,6 +1,10 @@
+# Third party imports
+import os.path
+import requests
+import shutil
 from flask import (Blueprint, after_this_request, current_app, flash, redirect, url_for)
 from flask_security import (current_user, login_user)
-
+# Ammcon imports
 from ammcon_frontend.auth_providers import OAuthSignIn
 from ammcon_frontend.models import User
 
@@ -46,14 +50,21 @@ def oauth_callback(provider):
         # Use first part of email if name is not available.
         if not username:
             username = email.split('@')[0]
+
+        # Download profile picture from Google and save to disk (link expires after a while so need to save locally)
+        filename = store_profile_picture(photo_url)
+
         # Create user object
-        user = current_app.user_datastore.create_user(nickname=username, email=email, photo_url=photo_url)
+        user = current_app.user_datastore.create_user(nickname=username, email=email, photo_url=filename)
+
         # default_role = user_datastore.find_role(name="end-user")
+
         # Give admin roles to preconfigured admin user if not already given
         if email == current_app.config['ADMIN_ACCOUNT']:
             current_app.user_datastore.add_role_to_user(user, 'admin')
         else:
             current_app.user_datastore.add_role_to_user(user, 'end-user')
+
         # Commit to database
         current_app.db.session.commit()
         current_app.logger.info('Created user for {0} with role {1}.'.format(user.email, user.roles))
@@ -80,3 +91,15 @@ def allowed_email(email):
     else:
         current_app.logger.info('Unauthorised user login attempt.')
     return False
+
+
+def store_profile_picture(url):
+    response = requests.get(url, stream=True)
+    output_filename = url.replace(':', '').replace('/', '').replace('.', '') + '.jpg'
+
+    print(os.path.join('static/', output_filename))
+
+    with open(os.path.join('static/', output_filename), 'wb') as f:
+        response.raw.decode_content = True
+        shutil.copyfileobj(response.raw, f)
+    return output_filename
