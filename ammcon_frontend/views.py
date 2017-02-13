@@ -6,10 +6,10 @@ Views that handle requests.
 import datetime as dt
 from functools import wraps
 # Third party imports
+import zmq
 from flask import (abort, json, jsonify, render_template, redirect, request, url_for)
 from flask_security import (current_user, login_required, logout_user)
 from sqlalchemy import desc
-import zmq
 # Ammcon imports
 import ammcon.h_bytecmds as pcmd
 import ammcon.helpers as helpers
@@ -62,9 +62,10 @@ def create_device(deviceid):
 
 
 @app.route('/graph')
+@login_required
 def graph_temps():
     """ Return data to use for plotting temperature/humidity values."""
-    start_datetime = dt.datetime.utcnow() - dt.timedelta(hours=24)
+    start_datetime = dt.datetime.utcnow() - dt.timedelta(hours=12)
     end_datetime = dt.datetime.utcnow() - dt.timedelta(minutes=0)
 
     query = Session().query(Temperature).filter(Temperature.datetime.between(start_datetime, end_datetime))
@@ -77,6 +78,7 @@ def graph_temps():
 
 
 @app.route('/data/<deviceid>')
+@login_required
 def env_data_json(deviceid):
     """ Return temperature/humidity values for the specified device."""
 
@@ -88,6 +90,7 @@ def env_data_json(deviceid):
 
 
 @app.route('/graphpage')
+@login_required
 def graph_page():
     return render_template('graph.html')
 
@@ -98,6 +101,7 @@ def sidepanel():
 
 
 @app.route('/commandmenu')
+@login_required
 def commandmenu():
     """ Serve command menu HTML. TO DO: send list of devices/commands?"""
     return render_template('command_menu.html')
@@ -255,6 +259,7 @@ def logout():
 # def make_session_permanent():
 #    app.logger.debug('Set session to permanent before request.')
 #    session.permanent = True
+
 
 
 @app.before_first_request
