@@ -14,8 +14,9 @@ def key_error(e):
 @blueprint.app_errorhandler(403)
 def unauthorized_access(error):
     """Handle 403 errors. Serves a generic error page."""
+    #error = 'Access forbidden'
     current_app.logger.warning('Access forbidden: %s (Error message = %s)', request.path, error)
-    return render_template('error.html'), 403
+    return render_template('error.html', error=error), 403
 
 
 @blueprint.app_errorhandler(404)
