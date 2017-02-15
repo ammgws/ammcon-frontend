@@ -1,14 +1,13 @@
 {% extends "base.html" -%}
 
-{% block premain %}
-<div data-role="panel" id="bottomsheetlist" class="ui-bottom-sheet ui-bottom-sheet-list" data-animate="false" data-position='bottom' data-display="overlay">
-    <nd2-include data-src="{{ url_for('commandmenu') }}"></nd2-include>
-</div>
-{% endblock premain %}
-
 {% block pagetitle %}AmmCon Main{% endblock pagetitle %}
 
 {% block content -%}
+<div data-role="panel" id="bottomsheetlist" class="ui-bottom-sheet ui-bottom-sheet-list" data-animate="false" data-position='bottom' data-display="overlay">
+    {% include 'command_menu.html' %}
+    {# <nd2-include data-src="{{ url_for('commandmenu') }}"></nd2-include> #}
+</div><!-- /commandmenu -->
+
 <div class="layout" style="width: 100%;">
     <img class="layout_bg" src="{{ url_for('static', filename='apartment_layout.png') }}" style="width: 100%;">
     <a href="#living_light1_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="living_light1" src="{{ url_for('static', filename='light.png') }}"></a>
@@ -36,6 +35,7 @@
     <li yip="#living_light1_menu" class="commands" value="living on"><a href="#">All On</a></li>
 </ul>
 </div>
+
 <div data-role="popup" id="living_light2_menu" data-theme="b">
 <ul data-role="listview" data-inset="true" style="min-width:210px;">
     <li data-role="list-divider">Living Room Light #2</li>
@@ -47,6 +47,7 @@
     <li yip="#living_light1_menu" class="commands" value="living on"><a href="#">All On</a></li>
 </ul>
 </div>
+
 <div data-role="popup" id="living_aircon_menu" data-theme="b">
 <ul data-role="listview" data-inset="true" style="min-width:210px;">
     <li data-role="list-divider">Living Room Aircon</li>
@@ -54,6 +55,7 @@
     <li yip="#living_aircon_menu" class="commands" value="AC auto"><a href="#">Auto</a></li>
 </ul>
 </div>
+
 <div data-role="popup" id="bedroom2_aircon_menu" data-theme="b">
 <ul data-role="listview" data-inset="true" style="min-width:210px;">
     <li data-role="list-divider">Bedroom2 Aircon</li>
@@ -61,6 +63,7 @@
     <li yip="#bedroom2_aircon_menu" class="commands" value="AC auto"><a href="#">Auto</a></li>
 </ul>
 </div>
+
 <div data-role="popup" id="bedroom3_aircon_menu" data-theme="b">
 <ul data-role="listview" data-inset="true" style="min-width:210px;">
     <li data-role="list-divider">Bedroom3 Aircon</li>
@@ -68,6 +71,7 @@
     <li yip="#bedroom3_aircon_menu" class="commands" value="AC auto"><a href="#">Auto</a></li>
 </ul>
 </div>
+
 <div data-role="popup" id="bedroom1_light_menu" data-theme="b">
 <ul data-role="listview" data-inset="true" style="min-width:210px;">
     <li data-role="list-divider">Bedroom1 Light</li>
@@ -79,6 +83,7 @@
     <li yip="#bedroom1_light_menu" class="commands" value="bedroom up"><a href="#">Brighten</a></li>
 </ul>
 </div>
+
 <div data-role="popup" id="bedroom2_light_menu" data-theme="b">
 <ul data-role="listview" data-inset="true" style="min-width:210px;">
     <li data-role="list-divider">Bedroom2 Light</li>
@@ -90,6 +95,7 @@
     <li yip="#bedroom1_light_menu" class="commands" value="kayoroom up"><a href="#">Brighten</a></li>
 </ul>
 </div>
+
 <div data-role="popup" id="bedroom3_light_menu" data-theme="b">
 <ul data-role="listview" data-inset="true" style="min-width:210px;">
     <li data-role="list-divider">Bedroom3 Light</li>
@@ -101,6 +107,7 @@
     <li yip="#bedroom1_light_menu" class="commands" value="myroom up"><a href="#">Brighten</a></li>
 </ul>
 </div>
+
 <div data-role="popup" id="tv_menu" data-theme="b">
 <ul data-role="listview" data-inset="true" style="min-width:210px;">
     <li data-role="list-divider">Living Room TV</li>
@@ -110,8 +117,9 @@
     <li yip="#tv_menu" class="commands" value="tv mute"><a href="#">Mute</a></li>
 </ul>
 </div>
+
 <p>Server response: <span id="response">???</span></p>
-<p>System date: {{ momentjs(date_time).format("YYYY/MM/DD h:mm:ss a") }}
+<p>System date: {{ momentjs(date_time).format("YYYY/MM/DD H:mm:ss a") }}
 <br />
 System uptime: {{ uptime }}</p>
 
