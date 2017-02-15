@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{#{% extends "base.html" %}#}
 
 {% block pagetitle %}AmmCon Graphs{% endblock pagetitle %}
 
@@ -24,44 +24,10 @@
                 "categoryAxis": {
                     "minPeriod": "ss",
                     "parseDates": true,
-                    "dateFormats": [
-                        {
-                            "period": "fff",
-                            "format": "JJ:NN:SS"
-                        },
-                        {
-                            "period": "ss",
-                            "format": "JJ:NN:SS"
-                        },
-                        {
-                            "period": "hh",
-                            "format": "JJ:NN"
-                        },
-                        {
-                            "period": "DD",
-                            "format": "MMM DD"
-                        },
-                        {
-                            "period": "WW",
-                            "format": "MMM DD"
-                        },
-                        {
-                            "period": "MM",
-                            "format": "MMMM"
-                        },
-                        {
-                            "period": "YYYY",
-                            "format": "YYYY"
-                        },
-                        {
-                            "period": "mm",
-                            "format": "JJ:NN"
-                        }
-                    ],
                 },
                 "chartCursor": {
                     "enabled": true,
-                    "categoryBalloonDateFormat": "JJ:NN:SS"
+                    "categoryBalloonDateFormat": "JJ:NN"
                 },
                 "chartScrollbar": {
                     "enabled": true
@@ -70,7 +36,7 @@
                 "graphs": [
                     {
                         "bullet": "round",
-                        "connect": false,
+                        "connect": true,
                         "id": "AmGraph-1",
                         "title": "Temperature",
                         "valueAxis": "ValueAxis-1",
@@ -79,6 +45,7 @@
                     },
                     {
                         "bullet": "square",
+                        "connect": true,
                         "id": "AmGraph-2",
                         "title": "Humidity",
                         "valueAxis": "ValueAxis-2",
