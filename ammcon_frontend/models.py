@@ -64,8 +64,8 @@ class User(db.Model, UserMixin):
     access_revoked = db.Column(db.Boolean(), default=False)
 
     # Flask-Security user tracking fields
-    last_login_at = db.Column(db.DateTime)
-    current_login_at = db.Column(db.DateTime)
+    last_login_at = db.Column(db.DateTime(timezone=True))  # store as UTC time
+    current_login_at = db.Column(db.DateTime(timezone=True))  # store as UTC time
     last_login_ip = db.Column(db.String(45))  # IPv6 address is max 45 chars
     current_login_ip = db.Column(db.String(45))
     login_count = db.Column(db.Integer)
@@ -85,7 +85,7 @@ class Log(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     command = db.Column(db.String(512))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    datetime = db.Column(db.DateTime, default=dt.datetime.utcnow)
+    datetime = db.Column(db.DateTime(timezone=True), default=dt.datetime.utcnow)  # store as UTC time
 
     # Define relationships
     user = db.relationship('User', back_populates='logs')
