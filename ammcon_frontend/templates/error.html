@@ -1,7 +1,14 @@
 {% extends "base.html" %}
 
 {%- block content %}
-    <p> An error occurred. Try again later.</p>
+    <p> An error occurred:
+        {% if error %}
+            {{ error }}
+        {% endif %}
+    </p>
+
+    <span class='subline'><a href="{{ url_for('index') }}" data-ajax='false'>Return to homepage</a></span>
+
 {% endblock content %}
 
 
