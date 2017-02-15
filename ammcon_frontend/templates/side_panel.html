@@ -16,16 +16,7 @@
 					<strong>{{ current_user.nickname }}</strong>
 					<span class='subline'>{{ current_user.email }}</span>
 					<span class='subline'><a href="{{ url_for('logout') }}" data-ajax='false'>Logout</a></span>
-
-                    {# TO DO: find out how to use moment.js in sidepanel #}
-					{# this breaks the site html, though it does display in local time. jquery mobile not liking the script being inserted here? #}
-					<span class='subline'>Last login at: {{ momentjs(current_user.last_login_at).format("YYYY/MM/DD H:mm:ss a") }}</span>
-                    {# <script>document.write(moment("2017-02-15T14:33:05 Z").format("YYYY/MM/DD H:mm:ss a"));</script> #}
-
-					{# below works, but time displayed in UTC #}
-					{# <span class='subline'>Last login at: {{ current_user.last_login_at }}</span> #}
-                    {# <script>window.console&&console.log('this also works');</script> #}
-
+					<span class='subline'>Last login at: {{ momentjs(current_user.last_login_at).format("YYYY/MM/DD HH:mm:ss a") }}</span>
                 </div>
 			</div>
 		</div>
