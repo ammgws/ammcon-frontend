@@ -280,7 +280,7 @@ def setup():
     # Connect to zeroMQ REQ socket, used to communicate with serial port
     # to do: handle disconnections somehow (though if background serial worker
     # fails then we're screwed anyway)
-    context = zmq.Context()
+    context = zmq.Context().instance()
     app.socket = context.socket(zmq.REQ)
     # socket.setsockopt(zmq.RCVTIMEO, 500)  # timeout in ms
     app.socket.connect('tcp://localhost:5555')
