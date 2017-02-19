@@ -3,7 +3,8 @@ from flask_admin import Admin
 from flask_admin.contrib import sqla
 from flask_security import current_user
 # Ammcon imports
-from ammcon.templogger import Device, Temperature, Session
+from ammcon import Session
+from ammcon.models import Device, Temperature
 from ammcon_frontend import app, db
 from ammcon_frontend.models import Log, Role, User
 
