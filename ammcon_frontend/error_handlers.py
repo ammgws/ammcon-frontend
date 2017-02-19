@@ -23,7 +23,7 @@ def unauthorized_access(error):
 def page_not_found(error):
     """Handle 404 errors. Only this error serves a non-generic page."""
     current_app.logger.warning('Page not found: %s (Error message = %s)', request.path, error)
-    return render_template('page_not_found.html'), 404
+    return render_template('error.html', error=error), 404
 
 
 @blueprint.app_errorhandler(500)
