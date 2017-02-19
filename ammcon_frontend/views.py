@@ -13,7 +13,8 @@ from sqlalchemy import desc
 # Ammcon imports
 import ammcon.h_bytecmds as pcmd
 import ammcon.helpers as helpers
-from ammcon.templogger import Session, Device, Temperature, TemperatureSchema
+from ammcon import Session
+from ammcon.models import Device, Temperature, TemperatureSchema
 from ammcon_frontend import app
 from ammcon_frontend.models import Log
 
