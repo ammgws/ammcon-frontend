@@ -3,11 +3,6 @@
 {% block pagetitle %}AmmCon Main{% endblock pagetitle %}
 
 {% block content -%}
-<div data-role="panel" id="bottomsheetlist" class="ui-bottom-sheet ui-bottom-sheet-list" data-animate="false" data-position='bottom' data-display="overlay">
-    {% include 'command_menu.html' %}
-    {# <nd2-include data-src="{{ url_for('commandmenu') }}"></nd2-include> #}
-</div><!-- /commandmenu -->
-
 <div class="layout" style="width: 100%;">
     <img class="layout_bg" src="{{ url_for('static', filename='apartment_layout.png') }}" style="width: 100%;">
     <a href="#living_light1_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="living_light1" src="{{ url_for('static', filename='light.png') }}"></a>
@@ -23,6 +18,11 @@
     <p class="temp" id="tempbedroom2" title="">Temp:</p>
     <p class="temp" id="tempbedroom3" title="">Temp:</p>
 </div>
+
+<div data-role="panel" id="bottomsheetlist" class="ui-bottom-sheet ui-bottom-sheet-list" data-animate="false" data-position='bottom' data-display="overlay">
+    {% include 'command_menu.html' %}
+    {# <nd2-include data-src="{{ url_for('commandmenu') }}"></nd2-include> #}
+</div><!-- /commandmenu -->
 
 <div data-role="popup" id="living_light1_menu" data-theme="b">
 <ul data-role="listview" data-inset="true" style="min-width:210px;">

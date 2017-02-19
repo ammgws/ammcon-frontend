@@ -1,0 +1,7 @@
+{% extends admin_base_template %}
+
+{% block menu_links %}
+{{ super() }}
+<a href="{{ url_for('index') }}" data-ajax='false'>AmmCon Home Page</a>
+{% endblock %}
+
