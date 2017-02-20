@@ -16,7 +16,8 @@
 					<strong>{{ current_user.nickname }}</strong>
 					<span class='subline'>{{ current_user.email }}</span>
 					<span class='subline'><a href="{{ url_for('logout') }}" data-ajax='false'>Logout</a></span>
-					<span class='subline'>Last login at: {{ momentjs(current_user.last_login_at).format("YYYY/MM/DD HH:mm:ss a") }}</span>
+					{# Why does moment.js mess with jquery page loading? #}
+					{#<span class='subline'>Last login at: {{ momentjs(current_user.last_login_at).format("YYYY/MM/DD HH:mm:ss a") }}</span>#}
                 </div>
 			</div>
 		</div>
@@ -28,7 +29,7 @@
 		<div data-role="collapsible" data-inset="false"  data-collapsed-icon="carat-d" data-expanded-icon="carat-d" data-iconpos="right">
 			<h3>Menu1</h3>
 			<ul data-role="listview" data-icon="false">
-				<li><a href="{{ url_for('graph_page') }}">Graphs</a></li>
+				<li><a href="{{ url_for('graph_page') }}" data-transition="flip">Graphs</a></li>
 				<li><a href="/#" class="ui-disabled" data-ajax='false'>TBD</a></li>
 				<li><a href="/#" class="ui-disabled" data-ajax='false'>TBD</a></li>
 			</ul>

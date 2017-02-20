@@ -262,14 +262,12 @@ def logout():
 #    session.permanent = True
 
 
-
 @app.before_first_request
 def setup():
     app.logger.debug('This is before first request')
     # Create any SQLAlchemy database tables that do not already exist
     try:
-        # don't operate on binded databases
-        app.db.create_all(bind=None)
+        app.db.create_all(bind=None)  # don't operate on binded databases
     except Exception as e:
         app.logger.error(e, exc_info=e)
 
