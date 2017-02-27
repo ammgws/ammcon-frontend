@@ -36,7 +36,7 @@ else:
 # Get client IP (remote address) from the X-Forward set by the proxy server (AmmCon should never be run without a proxy)
 app.wsgi_app = ProxyFix(app.wsgi_app)
 
-# Initialise SQLAlchemy databse object with our app instance
+# Initialise SQLAlchemy database object with our app instance.
 app.db = db
 app.db.init_app(app)
 
@@ -53,6 +53,8 @@ app.register_blueprint(error_handlers.blueprint)
 app.register_blueprint(oauth.blueprint)
 
 # Misc
+app.jinja_env.trim_blocks = True
+app.jinja_env.lstrip_blocks = True
 app.jinja_env.globals['momentjs'] = momentjs
 
 # Configure loggers
