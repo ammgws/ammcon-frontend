@@ -1,4 +1,5 @@
 {% extends "base.html" -%}
+{% from 'command_menu.html' import create_command_menu %}
 
 {% block pagetitle %}AmmCon Main{% endblock pagetitle %}
 
@@ -7,118 +8,32 @@
 {% block content -%}
 <div class="layout" style="width: 100%;">
     <img class="layout_bg" src="{{ url_for('static', filename='apartment_layout.png') }}" style="width: 100%;">
-    <a href="#living_light1_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="living_light1" src="{{ url_for('static', filename='light.png') }}"></a>
-    <a href="#living_light2_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="living_light2" src="{{ url_for('static', filename='light.png') }}"></a>
+    <a href="#living1_light_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="living_light1" src="{{ url_for('static', filename='light.png') }}"></a>
+    <a href="#living2_light_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="living_light2" src="{{ url_for('static', filename='light.png') }}"></a>
     <a href="#bedroom1_light_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="bedroom1_light" src="{{ url_for('static', filename='light.png') }}"></a>
     <a href="#bedroom2_light_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="bedroom2_light" src="{{ url_for('static', filename='light.png') }}"></a>
-    <a href="#bottomsheetlist"><img class="layout_sub" id="bedroom3_light" src="{{ url_for('static', filename='light.png') }}"></a>
+    <a href="#bedroom3_light_menu"><img class="layout_sub" id="bedroom3_light" src="{{ url_for('static', filename='light.png') }}"></a>
     <a href="#living_aircon_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="living_aircon" src="{{ url_for('static', filename='aircon.png') }}"></a>
     <a href="#bedroom2_aircon_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="bedroom2_aircon" src="{{ url_for('static', filename='aircon.png') }}"></a>
     <a href="#bedroom3_aircon_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="bedroom3_aircon" src="{{ url_for('static', filename='aircon.png') }}"></a>
     <a href="#tv_menu" data-rel="popup" data-transition="pop"><img class="layout_sub" id="living_tv" src="{{ url_for('static', filename='tv.png') }}"></a>
-    <p class="temp" id="templiving" title="">Temp:</p>
-    <p class="temp" id="tempbedroom2" title="">Temp:</p>
-    <p class="temp" id="tempbedroom3" title="">Temp:</p>
+    <p class="temp" id="temp1" title="">Temp:</p>
+    <p class="temp" id="temp2" title="">Temp:</p>
+    <p class="temp" id="temp3" title="">Temp:</p>
 </div>
 
-<div data-role="panel" id="bottomsheetlist" class="ui-bottom-sheet ui-bottom-sheet-list" data-animate="false" data-position='bottom' data-display="overlay">
-    {% include 'command_menu.html' %}
-    {# <nd2-include data-src="{{ url_for('commandmenu') }}"></nd2-include> #}
-</div><!-- /commandmenu -->
-
-<div data-role="popup" id="living_light1_menu" data-theme="b">
-<ul data-role="listview" data-inset="true" style="min-width:210px;">
-    <li data-role="list-divider">Living Room Light #1</li>
-    <li yip="#living_light1_menu" class="commands" value="living1 off"><a href="#">Off</a></li>
-    <li yip="#living_light1_menu" class="commands" value="living1 on"><a href="#">On</a></li>
-    <li yip="#living_light1_menu" class="commands" value="living1 low"><a href="#">Low</a></li>
-    <li yip="#living_light1_menu" class="commands" value="living1 night"><a href="#">Nightlight</a></li>
-    <li yip="#living_light1_menu" class="commands" value="living off"><a href="#">All Off</a></li>
-    <li yip="#living_light1_menu" class="commands" value="living on"><a href="#">All On</a></li>
-</ul>
-</div>
-
-<div data-role="popup" id="living_light2_menu" data-theme="b">
-<ul data-role="listview" data-inset="true" style="min-width:210px;">
-    <li data-role="list-divider">Living Room Light #2</li>
-    <li yip="#living_light2_menu" class="commands" value="living2 off"><a href="#">Off</a></li>
-    <li yip="#living_light2_menu" class="commands" value="living2 on"><a href="#">On</a></li>
-    <li yip="#living_light2_menu" class="commands" value="living2 low"><a href="#">Low</a></li>
-    <li yip="#living_light2_menu" class="commands" value="living2 night"><a href="#">Nightlight</a></li>
-    <li yip="#living_light1_menu" class="commands" value="living off"><a href="#">All Off</a></li>
-    <li yip="#living_light1_menu" class="commands" value="living on"><a href="#">All On</a></li>
-</ul>
-</div>
-
-<div data-role="popup" id="living_aircon_menu" data-theme="b">
-<ul data-role="listview" data-inset="true" style="min-width:210px;">
-    <li data-role="list-divider">Living Room Aircon</li>
-    <li yip="#living_aircon_menu" class="commands" value="AC off"><a href="#">Off</a></li>
-    <li yip="#living_aircon_menu" class="commands" value="AC auto"><a href="#">Auto</a></li>
-</ul>
-</div>
-
-<div data-role="popup" id="bedroom2_aircon_menu" data-theme="b">
-<ul data-role="listview" data-inset="true" style="min-width:210px;">
-    <li data-role="list-divider">Bedroom2 Aircon</li>
-    <li yip="#bedroom2_aircon_menu" class="commands" value="AC off"><a href="#">Off</a></li>
-    <li yip="#bedroom2_aircon_menu" class="commands" value="AC auto"><a href="#">Auto</a></li>
-</ul>
-</div>
-
-<div data-role="popup" id="bedroom3_aircon_menu" data-theme="b">
-<ul data-role="listview" data-inset="true" style="min-width:210px;">
-    <li data-role="list-divider">Bedroom3 Aircon</li>
-    <li yip="#bedroom3_aircon_menu" class="commands" value="AC off"><a href="#">Off</a></li>
-    <li yip="#bedroom3_aircon_menu" class="commands" value="AC auto"><a href="#">Auto</a></li>
-</ul>
-</div>
-
-<div data-role="popup" id="bedroom1_light_menu" data-theme="b">
-<ul data-role="listview" data-inset="true" style="min-width:210px;">
-    <li data-role="list-divider">Bedroom1 Light</li>
-    <li yip="#bedroom1_light_menu" class="commands" value="bedroom off"><a href="#">Off</a></li>
-    <li yip="#bedroom1_light_menu" class="commands" value="bedroom on"><a href="#">On</a></li>
-    <li yip="#bedroom1_light_menu" class="commands" value="bedroom full"><a href="#">Full</a></li>
-    <li yip="#bedroom1_light_menu" class="commands" value="bedroom night"><a href="#">Nightlight</a></li>
-    <li yip="#bedroom1_light_menu" class="commands" value="bedroom down"><a href="#">Dim</a></li>
-    <li yip="#bedroom1_light_menu" class="commands" value="bedroom up"><a href="#">Brighten</a></li>
-</ul>
-</div>
-
-<div data-role="popup" id="bedroom2_light_menu" data-theme="b">
-<ul data-role="listview" data-inset="true" style="min-width:210px;">
-    <li data-role="list-divider">Bedroom2 Light</li>
-    <li yip="#bedroom1_light_menu" class="commands" value="kayoroom off"><a href="#">Off</a></li>
-    <li yip="#bedroom1_light_menu" class="commands" value="kayoroom on"><a href="#">On</a></li>
-    <li yip="#bedroom1_light_menu" class="commands" value="kayoroom full"><a href="#">Full</a></li>
-    <li yip="#bedroom1_light_menu" class="commands" value="kayoroom night"><a href="#">Nightlight</a></li>
-    <li yip="#bedroom1_light_menu" class="commands" value="kayoroom down"><a href="#">Dim</a></li>
-    <li yip="#bedroom1_light_menu" class="commands" value="kayoroom up"><a href="#">Brighten</a></li>
-</ul>
-</div>
-
-<div data-role="popup" id="bedroom3_light_menu" data-theme="b">
-<ul data-role="listview" data-inset="true" style="min-width:210px;">
-    <li data-role="list-divider">Bedroom3 Light</li>
-    <li yip="#bedroom1_light_menu" class="commands" value="myroom off"><a href="#">Off</a></li>
-    <li yip="#bedroom1_light_menu" class="commands" value="myroom on"><a href="#">On</a></li>
-    <li yip="#bedroom1_light_menu" class="commands" value="myroom full"><a href="#">Full</a></li>
-    <li yip="#bedroom1_light_menu" class="commands" value="myroom night"><a href="#">Nightlight</a></li>
-    <li yip="#bedroom1_light_menu" class="commands" value="myroom down"><a href="#">Dim</a></li>
-    <li yip="#bedroom1_light_menu" class="commands" value="myroom up"><a href="#">Brighten</a></li>
-</ul>
-</div>
-
-<div data-role="popup" id="tv_menu" data-theme="b">
-<ul data-role="listview" data-inset="true" style="min-width:210px;">
-    <li data-role="list-divider">Living Room TV</li>
-    <li yip="#tv_menu" class="commands" value="htpc wol"><a href="#">HTPC On</a></li>
-    <li yip="#tv_menu" class="commands" value="tv off"><a href="#">Off</a></li>
-    <li yip="#tv_menu" class="commands" value="tv on"><a href="#">On</a></li>
-    <li yip="#tv_menu" class="commands" value="tv mute"><a href="#">Mute</a></li>
-</ul>
-</div>
+{# TODO: query backend for devices + list of commands, generate commands automatically #}
+{% if current_user.is_authenticated %}
+{{ create_command_menu('living1_light_menu', [('living1 off', 'Off'), ('living1 on', 'On'), ('living1 night', 'Nightlight'), ('living1 low', 'Low'), ('living off', 'All Off'), ('living on', 'All On')]) }}
+{{ create_command_menu('living2_light_menu', [('living2 off', 'Off'), ('living2 on', 'On'), ('living2 night', 'Nightlight'), ('living2 low', 'Low'), ('living off', 'All Off'), ('living on', 'All On')]) }}
+{{ create_command_menu('bedroom1_light_menu', [('bedroom off', 'Off'), ('bedroom on', 'On'), ('bedroom night', 'Nightlight'), ('bedroom full', 'Full'), ('bedroom down', 'Dim'), ('bedroom up', 'Brighten')]) }}
+{{ create_command_menu('bedroom2_light_menu', [('kayoroom off', 'Off'), ('kayoroom on', 'On'), ('kayoroom night', 'Nightlight'), ('kayoroom full', 'Full'), ('kayoroom down', 'Dim'), ('kayoroom up', 'Brighten')]) }}
+{{ create_command_menu('bedroom3_light_menu', [('myroom off', 'Off'), ('myroom on', 'On'), ('myroom night', 'Nightlight'), ('myroom full', 'Full'), ('myroom down', 'Dim'), ('myroom up', 'Brighten')]) }}
+{{ create_command_menu('living_aircon_menu', [('living AC off', 'Off'), ('living AC auto', 'Auto')]) }}
+{{ create_command_menu('bedroom2_aircon_menu', [('bedroom2 AC off', 'Off'), ('bedroom2 AC auto', 'Auto')]) }}
+{{ create_command_menu('bedroom3_aircon_menu', [('bedroom3 AC off', 'Off'), ('bedroom3 AC auto', 'Auto')]) }}
+{{ create_command_menu('tv_menu', [('htpc wol', 'HTPC On'), ('tv off', 'TV Off'), ('tv on', 'TV On'), ('tv mute', 'Mute TV')]) }}
+{% endif %}
 
 <p>Server response: <span id="response">???</span></p>
 <p>System date: {{ momentjs(date_time).format("YYYY/MM/DD H:mm:ss a") }}
