@@ -16,15 +16,15 @@ p.temp {
  width: 100%;
  color: black
 }
-p#templiving {
+p#temp1 {
  top: 160px;
  left: 15px;
 }
-p#tempbedroom2 {
+p#temp2 {
  top: 297px;
  left: 15px;
 }
-p#tempbedroom3 {
+p#temp3 {
  top: 150px;
  left: 225px;
 }
