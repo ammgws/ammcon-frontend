@@ -35,9 +35,11 @@
 {{ create_command_menu('tv_menu', [('htpc wol', 'HTPC On'), ('tv off', 'TV Off'), ('tv on', 'TV On'), ('tv mute', 'Mute TV')]) }}
 {% endif %}
 
-<p>Server response: <span id="response">???</span></p>
-<p>System date: {{ momentjs(date_time).format("YYYY/MM/DD H:mm:ss a") }}
-<br />
-System uptime: {{ uptime }}</p>
+<p>Server response: <span id="response">???</span>
+    <br>
+    <span id="sysdate">System date: {{ momentjs(date_time, "sysdate").format("YYYY/MM/DD H:mm:ss a") }}</span>
+    <br>
+    <span>System uptime: {{ uptime }}</span>
+</p>
 
 {%- endblock content %}
