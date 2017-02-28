@@ -1,5 +1,5 @@
 {% if current_user.is_authenticated %}
-<div data-role="panel" id="leftpanel" data-display="overlay" data-position-fixed="true" >
+<div data-role="panel" id="leftpanel" data-display="overlay" data-position-fixed="true">
 
 	<div class='nd2-sidepanel-profile wow fadeInDown'>
 		<img class='profile-background' src="{{ url_for('static', filename='sidepanel_bg.jpg') }}" />
@@ -15,8 +15,8 @@
 				<div class='box profile-text'>
 					<strong>{{ current_user.nickname }}</strong>
 					<span class='subline'>{{ current_user.email }}</span>
-					<span class='subline'><a href="{{ url_for('logout') }}" data-ajax='false'>Logout</a></span>
-					<span class='subline' id="logindate">Last login at: {{ momentjs(current_user.last_login_at, "logindate").format("YYYY/MM/DD HH:mm:ss a") }}</span>
+					<span class='subline'><a href="{{ url_for('logout') }}">Logout</a></span>
+					<span class='subline'>Last login at: <span id="logindate">{{ momentjs(current_user.last_login_at, "logindate").format("YYYY/MM/DD HH:mm:ss a") }}</span></span>
                 </div>
 			</div>
 		</div>
@@ -28,17 +28,17 @@
 		<div data-role="collapsible" data-inset="false"  data-collapsed-icon="carat-d" data-expanded-icon="carat-d" data-iconpos="right">
 			<h3>Menu1</h3>
 			<ul data-role="listview" data-icon="false">
-				<li><a href="{{ url_for('graph_page') }}" data-transition="flip">Graphs</a></li>
-				<li><a href="/#" class="ui-disabled" data-ajax='false'>TBD</a></li>
-				<li><a href="/#" class="ui-disabled" data-ajax='false'>TBD</a></li>
+				<li><a href="{{ url_for('graph_page') }}" data-transition="flip" prefetch="true">Graphs</a></li>
+				<li><a href="/#" class="ui-disabled">TBD</a></li>
+				<li><a href="/#" class="ui-disabled">TBD</a></li>
 			</ul>
 		</div>
 		<div data-role="collapsible" data-inset="false" data-collapsed-icon="carat-d" data-expanded-icon="carat-d" data-iconpos="right">
 			<h3>Menu2</h3>
 			<ul data-role="listview" data-icon="false">
-				<li><a href="/#" class="ui-disabled" data-ajax='false'>TBD</a></li>
-				<li><a href="/#" class="ui-disabled" data-ajax='false'>TBD</a></li>
-				<li><a href="/#" class="ui-disabled" data-ajax='false'>TBD</a></li>
+				<li><a href="/#" class="ui-disabled">TBD</a></li>
+				<li><a href="/#" class="ui-disabled">TBD</a></li>
+				<li><a href="/#" class="ui-disabled">TBD</a></li>
 			</ul>
 		</div>
 		<ul data-role="listview" data-inset="false">
@@ -47,9 +47,9 @@
 		<div data-role="collapsible" data-inset="false" data-collapsed-icon="carat-d" data-expanded-icon="carat-d" data-iconpos="right">
 			<h3>TBD</h3>
 			<ul data-role="listview" data-icon="false">
-				<li><a href="/#" class="ui-disabled" data-ajax='false'>TBD</a></li>
-				<li><a href="/#" class="ui-disabled" data-ajax='false'>TBD</a></li>
-				<li><a href="/#" class="ui-disabled" data-ajax='false'>TBD</a></li>
+				<li><a href="/#" class="ui-disabled">TBD</a></li>
+				<li><a href="/#" class="ui-disabled">TBD</a></li>
+				<li><a href="/#" class="ui-disabled">TBD</a></li>
 			</ul>
 		</div>
 
@@ -62,8 +62,8 @@
 			<h3>Tools</h3>
 			<ul data-role="listview" data-icon="false">
 				{# Flask-Admin uses Bootstrap so need to set data-ajax=false as jQuery Mobile expects links to also use jQuery Mobile #}
-				<li><a href="{{ url_for('admin.index') }}" data-ajax='false'>Database</a></li>
-				<li><a href="/#" class="ui-disabled" data-ajax='false'>TBD</a></li>
+				<li><a href="{{ url_for('admin.index') }}">Database</a></li>
+				<li><a href="/#" class="ui-disabled">TBD</a></li>
 			</ul>
 		</div>
 		{% endif %}
