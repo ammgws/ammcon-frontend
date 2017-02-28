@@ -11,7 +11,7 @@
         </script>
 
         {# Stylesheets as per order used in nativeDroid2 examples #}
-		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.3.0/css/font-awesome.min.css" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.3.0/css/font-awesome.min.css" />
         {# Load JQuery Mobile CSS from Google CDN. (nativeDroid2 uses 1.4.5 as of v2.0.3) #}
         <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.css">
         {# Other stylesheets required by nativeDroid2. Local copy only for now. #}
@@ -20,7 +20,7 @@
         <link rel="stylesheet" href="{{ url_for('static', filename='nativeDroid2/css/nativedroid2.css') }}"></linkscript>
 
         {# Ammcon specific CSS #}
-        <link rel="stylesheet" type=text/css href="{{ url_for('static', filename='css/ammcon.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/ammcon.css') }}">
 
         {# Load jQuery framework from CDN with local fallback #}
         {# Calculated hashes using https://report-uri.io/home/sri_hash #}
@@ -33,13 +33,13 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"
                 integrity="sha256-xNjb53/rY+WmG+4L6tTl9m6PpqknWZvRt0rO1SRnJzw= sha384-YWP9O4NjmcGo4oEJFXvvYSEzuHIvey+LbXkBNJ1Kd0yfugEZN9NCQNpRYBVC1RvA sha512-BHDCWLtdp0XpAFccP2NifCbJfYoYhsRSZOUM3KnAxy2b/Ay3Bn91frud+3A95brA4wDWV3yEOZrJqgV8aZRXUQ=="
                 crossorigin="anonymous"></script>
-        <script>window.mobile || document.write('<script src="{{ url_for('static', filename='js/jquery-ui.min.js') }}"><\/script>')</script>
+        <script>window.jQuery.ui || document.write('<script src="{{ url_for('static', filename='js/jquery-ui.min.js') }}"><\/script>')</script>
 
         {# Load jQuery Mobile framework from CDN with local fallback #}
         <script src="https://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.5/jquery.mobile.min.js"
                 integrity="sha256-MkfSkbXhZoQ1CyPwjC30mPfLF8iKF5n564n9WvCLX4E= sha384-XEn4bZ9g8ia7KJWyaf3o/ADO5s2pqwtDl1MdxgCZ9x6rm5QICw5Zk2+vwIJnAeFD sha512-vJbF+28+60KlC84fvWs/Z2QynTmqi3nD0hmMMDqQnBKYdmUdP6UzNOFCHf651Ux8TDMyitBWcWUCKDgKxtVpBA=="
                 crossorigin="anonymous"></script>
-        <script>window.mobile || document.write('<script src="{{ url_for('static', filename='js/jquery.mobile.min.js') }}"><\/script>')</script>
+        <script>window.jQuery.mobile || document.write('<script src="{{ url_for('static', filename='js/jquery.mobile.min.js') }}"><\/script>')</script>
 
         {# nativeDroid2 scripts #}
         <script src="{{ url_for('static', filename='nativeDroid2/vendor/waves/waves.min.js') }}"></script>
@@ -78,11 +78,10 @@
         {% endblock head %}
     </head>
     <body>
-        <div data-role="page" data-theme="a" id={% block pageid %}{% endblock pageid %}>
+        <div data-role="page" data-theme="a" id="{% block pageid %}{% endblock pageid %}">
             {% include 'side_panel.html' %}<!-- /sidepanel -->
 
-            {# Was using nd2-include at first but it has issues with moment.js being used inside of the side panel. #}
-            {# Doesn't seem like need to use it anyway as Jinja2 provides template importing for us. #}
+            {# Use Jinja2 provides template importing instead of nd2-include. #}
             {# <nd2-include data-src="{{ url_for('sidepanel') }}"></nd2-include> <!-- /sidepanel -->#}
 
             <div data-role="header" data-position="fixed" class="wow fadeIn">
