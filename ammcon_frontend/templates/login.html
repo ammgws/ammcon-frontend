@@ -2,6 +2,8 @@
 
 {% block pagetitle %}AmmCon Login{% endblock pagetitle %}
 
+{% block pageid %}login{% endblock pageid %}
+
 {%- block content %}
     {% for message in get_flashed_messages() %}
     <p><b>Error</b>: {{ message }}</p>
