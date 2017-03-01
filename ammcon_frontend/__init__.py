@@ -5,6 +5,7 @@ import os
 # Third party imports
 from flask import Flask
 from flask_security import Security, SQLAlchemyUserDatastore
+from zmq import Context
 from werkzeug.contrib.fixers import ProxyFix
 # Ammcon imports (note views are imported below after app instance is created)
 import ammcon_frontend.error_handlers
@@ -43,6 +44,9 @@ app.db.init_app(app)
 # Initialize the SQLAlchemy data store and Flask-Security.
 app.user_datastore = SQLAlchemyUserDatastore(app.db, User, Role)
 app.security = Security(app, app.user_datastore)
+
+# Create a ZMQ global Context instance and attach to app (contexts are thread-safe)
+app.zmqcontext = Context().instance()
 
 # Import views after app instance is instantiated to avoid circular reference
 # noinspection PyPep8

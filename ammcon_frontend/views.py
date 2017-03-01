@@ -130,7 +130,7 @@ def index():
 def run_command():
     """ Get command from web UI, and if valid send it off to the micro."""
 
-    # TO DO: fix up all these kludges. Decide on universal response format.
+    # TODO: fix up all these kludges. Decide on universal response format.
 
     # Redirect back to login page if session expired or unauthorised
     # Cannot use @login_required since commands are sent using AJAX and
@@ -144,11 +144,19 @@ def run_command():
     if command:
         app.logger.info('Command "%s" received. '
                         'Sending message: %s', command_text, command)
+
+        # Connect to zeroMQ REQ socket, used to communicate with serial port
+        # TODO: handle disconnections somehow (though if background serial worker fails then we're screwed anyway)
+        # TODO: move zeroMQ stuff to its own class so can reuse code
+        socket = app.zmqcontext.socket(zmq.REQ)
+        # socket.setsockopt(zmq.RCVTIMEO, 500)  # timeout in ms
+        socket.connect('tcp://localhost:5555')
+        app.logger.info('############### Connected to zeroMQ server ###############')
+
         try:
-            message_tracker = app.socket.send(command, copy=False, track=True)
+            message_tracker = socket.send(command, copy=False, track=True)
         except zmq.ZMQError:
             app.logger.error("ZMQ send failed")
-        app.logger.debug(message_tracker)
 
         # Added (temporarily) for debugging purposes
         n = 0
@@ -156,7 +164,10 @@ def run_command():
             app.logger.debug("yarp{}{}".format(command_text, n))
             n += 1
 
-        response = app.socket.recv()  # blocks until response is found
+        response = socket.recv()  # blocks until response is found
+
+        socket.close()
+
         app.logger.info('Response received: %s', helpers.print_bytearray(response))
     elif command_text == 'htpc wol':
         response = helpers.send_magic_packet(app.config['MAC_ADDR'], app.config['BROADCAST_ADDR'])
@@ -210,8 +221,21 @@ def set_scene_htpc(state):
     if command:
         app.logger.info('Command "%s" received. '
                         'Sending message: %s', command_text, command)
-        app.socket.send(command)
-        response = app.socket.recv()  # blocks until response is found
+
+        # Connect to zeroMQ REQ socket, used to communicate with serial port
+        # TODO: handle disconnections somehow (though if background serial worker fails then we're screwed anyway)
+        # TODO: move zeroMQ stuff to its own class so can reuse code
+        socket = app.zmqcontext.socket(zmq.REQ)
+        # socket.setsockopt(zmq.RCVTIMEO, 500)  # timeout in ms
+        socket.connect('tcp://localhost:5555')
+        app.logger.info('############### Connected to zeroMQ server ###############')
+
+        socket.send(command)
+
+        response = socket.recv()  # blocks until response is found
+
+        socket.close()
+
         app.logger.info('Response received: %s', helpers.print_bytearray(response))
     else:
         app.logger.info('Invalid command. Do nothing')
@@ -222,14 +246,27 @@ def set_scene_htpc(state):
 @internal_only
 def set_scene_morning():
     """Set scene to go along with morning alarm (e.g. turn on bedroom lights.)"""
-    # TO DO: make private API calls use non-blocking zmq
+    # TODO: make private API calls use non-blocking zmq
     command_text = 'bedroom on'
     command = pcmd.micro_commands.get(command_text, None)
     if command:
         app.logger.info('Command "%s" received. '
                         'Sending message: %s', command_text, command)
-        app.socket.send(command)
-        response = app.socket.recv()  # blocks until response is found
+
+        # Connect to zeroMQ REQ socket, used to communicate with serial port
+        # TODO: handle disconnections somehow (though if background serial worker fails then we're screwed anyway)
+        # TODO: move zeroMQ stuff to its own class so can reuse code
+        socket = app.zmqcontext.socket(zmq.REQ)
+        # socket.setsockopt(zmq.RCVTIMEO, 500)  # timeout in ms
+        socket.connect('tcp://localhost:5555')
+        app.logger.info('############### Connected to zeroMQ server ###############')
+
+        socket.send(command)
+
+        response = socket.recv()  # blocks until response is found
+
+        socket.close()
+
         app.logger.info('Response received: %s', helpers.print_bytearray(response))
     else:
         app.logger.info('Invalid command. Do nothing')
@@ -275,15 +312,6 @@ def setup():
     app.user_datastore.find_or_create_role(name='admin', description='Administrator')
     app.user_datastore.find_or_create_role(name='end-user', description='End user')
     app.db.session.commit()
-
-    # Connect to zeroMQ REQ socket, used to communicate with serial port
-    # to do: handle disconnections somehow (though if background serial worker
-    # fails then we're screwed anyway)
-    context = zmq.Context().instance()
-    app.socket = context.socket(zmq.REQ)
-    # socket.setsockopt(zmq.RCVTIMEO, 500)  # timeout in ms
-    app.socket.connect('tcp://localhost:5555')
-    app.logger.info('############### Connected to zeroMQ server ###############')
 
 
 if __name__ == '__main__':
