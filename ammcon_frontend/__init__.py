@@ -46,7 +46,7 @@ app.user_datastore = SQLAlchemyUserDatastore(app.db, User, Role)
 app.security = Security(app, app.user_datastore)
 
 # Create a ZMQ global Context instance and attach to app (contexts are thread-safe)
-app.zmqcontext = Context().instance()
+app.zmqcontext = Context.instance()
 
 # Import views after app instance is instantiated to avoid circular reference
 # noinspection PyPep8
