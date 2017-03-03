@@ -66,7 +66,7 @@ img#bedroom3_aircon {
 }
 /* ↑↑↑　Element positioning　for house layout image ↑↑↑　*/
 
-/* ↓↓↓　Attempt at fixing issue #13 ↓↓↓　*/
+/* ↓↓↓　Attempt at fixing issue #13. ↓↓↓ */
 #leftpanel .ui-panel-inner {
  // setting these to 0px doesnt remove the white line, but can increase the white space if make it larger
  //margin-top: 0px;
