@@ -1,14 +1,3 @@
-// registers this click event handler on 'document ready'
-/*
-$(function() {
-    $("a#login").bind('click', function() {
-        $("#loader").show();
-        //alert("Click event detected.");
-        //window.console&&console.log("Click event detected.");
-    });
-});
-*/
-
 $(document).on( "click", ".show-page-loading-msg", function() {
   var $this = $( this ),
   theme = $this.jqmData( "theme" ) || $.mobile.loader.prototype.options.theme,

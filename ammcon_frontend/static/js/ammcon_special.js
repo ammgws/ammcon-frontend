@@ -1,7 +1,7 @@
 // call backend when user clicks on a command in command menu
 // this event handler is registered on 'document ready'
 $(function() {
-  $('[data-ammcon]').bind('click', function() {
+  $('[data-ammcon]').on('click', function() {
     $.getJSON($SCRIPT_ROOT + '/command', {
       command: $(this).data("ammcon_cmd")
     }, function(data) {
@@ -35,7 +35,7 @@ $(function() {
 // on click, update the displayed temperature/humidity for the given room
 // this event handler is registered on 'document ready'
 $(function() {
-  $('.temp').bind('click', function() {
+  $('.temp').on('click', function() {
     temp_command = $(this).attr("id");
     // for debugging purposes:
     //alert(temp_command)
