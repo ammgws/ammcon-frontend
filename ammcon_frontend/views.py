@@ -96,9 +96,10 @@ def graph_page():
     return render_template('graph.html')
 
 
-@app.route('/sidepanel')
-def sidepanel():
-    return render_template('side_panel.html')
+@app.route('/testpage')
+@login_required
+def test():
+    return render_template('test.html')
 
 
 @app.route('/commandmenu')
@@ -151,7 +152,7 @@ def run_command():
         socket = app.zmqcontext.socket(zmq.REQ)
         # socket.setsockopt(zmq.RCVTIMEO, 500)  # timeout in ms
         socket.connect('tcp://localhost:5555')
-        app.logger.info('############### Connected to zeroMQ server ###############')
+        app.logger.info('Connected to zeroMQ server.')
 
         try:
             message_tracker = socket.send(command, copy=False, track=True)
@@ -228,7 +229,7 @@ def set_scene_htpc(state):
         socket = app.zmqcontext.socket(zmq.REQ)
         # socket.setsockopt(zmq.RCVTIMEO, 500)  # timeout in ms
         socket.connect('tcp://localhost:5555')
-        app.logger.info('############### Connected to zeroMQ server ###############')
+        app.logger.info('Connected to zeroMQ server.')
 
         socket.send(command)
 
