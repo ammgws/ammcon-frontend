@@ -72,17 +72,16 @@
         <link rel="mask-icon" href="{{ url_for('static', filename='favicon/safari-pinned-tab.svg') }}" color="#5bbad5">
         <link rel="theme-color" href="{{ url_for('static', filename='favicon/safari-pinned-tab.svg') }}" content="#b900bd">
 
-        {# Android Homescreen app, see https://developer.chrome.com/multidevice/android/installtohomescreen #}
-        {# manifest.json format: see https://developer.mozilla.org/en-US/docs/Web/Manifest #}
+        {# Android Homescreen app, see https://developer.chrome.com/multidevice/android/installtohomescreen
+           For manifest.json format see https://developer.mozilla.org/en-US/docs/Web/Manifest #}
         <link rel="manifest" href="{{ url_for('static', filename='favicon/manifest.json') }}">
         {% endblock head %}
     </head>
     <body>
         <div data-role="page" data-theme="a" id="{% block pageid %}{% endblock pageid %}">
-            {% include 'side_panel.html' %}<!-- /sidepanel -->
-
+            {% include 'side_panel.html' %}
             {# Use Jinja2 provides template importing instead of nd2-include. #}
-            {# <nd2-include data-src="{{ url_for('sidepanel') }}"></nd2-include> <!-- /sidepanel -->#}
+            {# <nd2-include data-src="{{ url_for('sidepanel') }}"></nd2-include>#}
 
             <div data-role="header" data-position="fixed" class="wow fadeIn">
                 <a href="#leftpanel" class="ui-btn ui-btn-left wow fadeIn" data-wow-delay='0.8s'><i class="zmdi zmdi-menu"></i></a>

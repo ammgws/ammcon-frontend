@@ -68,9 +68,18 @@ img#bedroom3_aircon {
 
 /* ↓↓↓　Attempt at fixing issue #13. ↓↓↓ */
 #leftpanel .ui-panel-inner {
+ //padding: 5em;
  // setting these to 0px doesnt remove the white line, but can increase the white space if make it larger
- //margin-top: 0px;
- //padding-top: 0px;
+ //margin-top: -5px;
+ //padding-top: -5px;
+ //border-style: none;
+ //border-width: 0px;
+}
+
+// this has no effect at all
+#leftpanel .ui-panel {
+ //margin-top: 60px;
+ //padding-top: 60px;
  //border-style: none;
  //border-width: 0px;
 }
