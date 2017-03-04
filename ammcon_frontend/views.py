@@ -96,12 +96,6 @@ def graph_page():
     return render_template('graph.html')
 
 
-@app.route('/testpage')
-@login_required
-def test():
-    return render_template('test.html')
-
-
 @app.route('/commandmenu')
 @login_required
 def commandmenu():
