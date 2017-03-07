@@ -16,4 +16,7 @@
         </a>
     </button>
     </div>
+
+    {# Needs to load after jQuery has loaded #}
+    <script src="{{ url_for('static', filename='js/ammcon_general.js') }}"></script>
 {% endblock content %}
