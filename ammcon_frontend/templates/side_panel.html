@@ -16,7 +16,7 @@
 					<strong>{{ current_user.nickname }}</strong>
 					<span class='subline'>{{ current_user.email }}</span>
 					<span class='subline'><a href="{{ url_for('logout') }}">Logout</a></span>
-					<span class='subline'>Last login: <span id="logindate">{{ momentjs(current_user.last_login_at, "logindate").format("YYYY/MM/DD HH:mm:ss") }}</span></span>
+					<span class='subline'>Last login: <span id="logindate">{{ momentJS(current_user.last_login_at, attr_id="logindate").format("YYYY/MM/DD HH:mm:ss") }}</span></span>
                 </div>
 			</div>
 		</div>

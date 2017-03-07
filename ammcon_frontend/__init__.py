@@ -12,7 +12,7 @@ import ammcon_frontend.error_handlers
 import ammcon_frontend.oauth
 from ammcon_frontend.config import LOCAL_PATH, LOG_PATH
 from ammcon_frontend.models import db, User, Role
-from ammcon_frontend.momentjs import momentjs
+from ammcon_frontend.momentjs import momentJS
 
 # Create and configure Flask app
 app = Flask(__name__.split('.')[0], instance_path=LOCAL_PATH, instance_relative_config=True)
@@ -59,7 +59,7 @@ app.register_blueprint(oauth.blueprint)
 # Misc
 app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True
-app.jinja_env.globals['momentjs'] = momentjs
+app.jinja_env.globals['momentJS'] = momentJS
 
 # Configure loggers
 if not os.path.exists(LOG_PATH):

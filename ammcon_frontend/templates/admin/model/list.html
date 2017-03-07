@@ -142,7 +142,7 @@
                     {# ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ #}
                     {# For AmmCon: use moment.js to display datetimes in user's local time for predefined columns. #}
                     {% if c in ['last_login_at', 'current_login_at', 'datetime'] %}
-                        {% set display_value_ammcon = momentjs(get_value(row, c)).format("YYYY/MM/DD H:mm:ss a") %}
+                        {% set display_value_ammcon = momentJS(get_value(row, c), script_type="standard").format("YYYY/MM/DD H:mm:ss a") %}
                     {% else %}
                         {% set display_value_ammcon = get_value(row, c) %}
                     {% endif %}
