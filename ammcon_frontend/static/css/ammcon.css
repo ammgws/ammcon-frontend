@@ -13,6 +13,7 @@ svg#layout_svg {
    font-family: "RobotoDraft","Roboto","Helvetica Neue",sans-serif;
    position: relative;
    width:100%;
+   height: auto; /* Fix issue #14 */
 }
 
 svg.temp_text {
