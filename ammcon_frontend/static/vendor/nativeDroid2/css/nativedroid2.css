@@ -20,7 +20,7 @@
 /*@import url("nativedroid2.color.grey.css");*/
 /*@import url("nativedroid2.color.blue-grey.css");*/
 
-
+/* Moved these outside of this file to load from CDN */
 /*@import url("flexboxgrid.min.css");*/
 /*@import url("material-design-iconic-font.min.css");*/
 /*@import url(//fonts.googleapis.com/css?family=RobotoDraft:300,400,500,700,400italic);*/
