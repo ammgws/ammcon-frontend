@@ -34,3 +34,10 @@ svg.light_icon{
 }
 */
 
+.ui-content {
+    background-color: rgba(0,0,0);
+}
+
+.nd2-sidepanel-profile:after {
+    background-color: #000000;
+}
