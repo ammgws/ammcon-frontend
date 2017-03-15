@@ -34,6 +34,10 @@ class RoleAdmin(sqla.ModelView):
 
 # Log model for SQL-Admin
 class LogAdmin(sqla.ModelView):
+
+    # sort by datetime in descending order (newest first)
+    column_default_sort = ('datetime', True)
+
     # Prevent administration of Logs unless the currently logged-in user has the "admin" role
     def is_accessible(self):
         return current_user.has_role('admin')
