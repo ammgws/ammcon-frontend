@@ -156,8 +156,9 @@ def run_command():
         # Added (temporarily) for debugging purposes
         n = 0
         while not message_tracker.done:
-            app.logger.debug("yarp{}{}".format(command_text, n))
+            app.logger.debug("Sending {} ({})".format(command_text, n))
             n += 1
+        app.logger.debug("Sent.")
 
         response = socket.recv()  # blocks until response is found
 
