@@ -12,14 +12,8 @@
 svg#layout_svg {
    font-family: "RobotoDraft","Roboto","Helvetica Neue",sans-serif;
    position: relative;
-   width:100%;
+   width: 100%;
    height: auto; /* Fix issue #14 */
-}
-
-svg.temp_text {
-    text-anchor: left;
-    font-size: 48;
-    fill: #000000;
 }
 
 /*
@@ -34,10 +28,29 @@ svg.light_icon{
 }
 */
 
-.ui-content {
-    background-color: rgba(0,0,0);
-}
-
+/*
 .nd2-sidepanel-profile:after {
     background-color: #000000;
+}
+*/
+
+/* main page background */
+.ui-page {
+    background: #000000;
+}
+
+/* main page text */
+.ui-overlay-a, .ui-page-theme-a, .ui-page-theme-a .ui-panel-wrapper {
+	/*background-color: #ffffff;
+	border-color: rgba(0,0,0,.87);*/
+	color: rgba(255, 255, 255, 0.87);
+}
+
+/* side panel background */
+.ui-panel-position-left > .ui-panel-inner {
+    background-color: #000000;
+}
+
+.ui-collapsible.ui-collapsible {
+	background-color: #000000;
 }
