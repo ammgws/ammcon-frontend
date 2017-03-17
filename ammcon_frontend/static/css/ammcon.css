@@ -16,6 +16,44 @@ svg#layout_svg {
    height: auto; /* Fix issue #14 */
 }
 
+path.window {
+    fill: none;
+    stroke: #808080;
+    stroke-width: 6;
+    stroke-opacity: 0.66666667;
+}
+
+.tobira {
+    stroke: gray;
+    fill: none;
+}
+
+.temp_text {
+    text-anchor: left;
+    font-size: 24px;
+    fill: yellow;
+}
+
+.outline {
+    stroke: white;
+    stroke-width: 6;
+    fill: none;
+}
+
+.door {
+    stroke: white;
+    fill: none;
+}
+
+.interactive {
+    stroke: pink;
+}
+
+.misc {
+    stroke: gray;
+    fill: none;
+}
+
 /*
 svg.light_icon{
     text-anchor: middle;
