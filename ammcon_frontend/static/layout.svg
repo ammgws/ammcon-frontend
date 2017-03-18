@@ -478,7 +478,8 @@
   <g
      id="tv"
      class="interactive"
-     transform="translate(30,160)">
+     transform="translate(30,160)"
+     style="pointer-events:all;" >
     <rect
        rx="5"
        ry="5"
