@@ -22,36 +22,11 @@
 		</div>
 	</div>
 
-	<ul data-role="listview" data-inset="false">
-		<li data-role="list-divider">Main</li>
+	<ul data-role="listview" data-icon="false">
+		<li><a href="{{ url_for('graph_page') }}" data-transition="flip" prefetch="true"><i class="zmdi zmdi-chart"></i> Graphs</a></li>
+		<li><a href="/#" data-transition="flip" prefetch="true"><i class="zmdi zmdi-settings"></i> Settings</a></li>
+		<li><a href="/#" data-transition="flip" prefetch="true"><i class="zmdi zmdi-pin-help"></i> Help</a></li>
 	</ul>
-	<div data-role="collapsible" data-inset="false"  data-collapsed-icon="carat-d" data-expanded-icon="carat-d" data-iconpos="right">
-		<h3>Menu1</h3>
-		<ul data-role="listview" data-icon="false">
-			<li><a href="{{ url_for('graph_page') }}" data-transition="flip" prefetch="true">Graphs</a></li>
-			<li><a href="/#" class="ui-disabled">TBD</a></li>
-			<li><a href="/#" class="ui-disabled">TBD</a></li>
-		</ul>
-	</div>
-	<div data-role="collapsible" data-inset="false" data-collapsed-icon="carat-d" data-expanded-icon="carat-d" data-iconpos="right">
-		<h3>Menu2</h3>
-		<ul data-role="listview" data-icon="false">
-			<li><a href="/#" class="ui-disabled">TBD</a></li>
-			<li><a href="/#" class="ui-disabled">TBD</a></li>
-			<li><a href="/#" class="ui-disabled">TBD</a></li>
-		</ul>
-	</div>
-	<ul data-role="listview" data-inset="false">
-		<li data-role="list-divider">TBD</li>
-	</ul>
-	<div data-role="collapsible" data-inset="false" data-collapsed-icon="carat-d" data-expanded-icon="carat-d" data-iconpos="right">
-		<h3>TBD</h3>
-		<ul data-role="listview" data-icon="false">
-			<li><a href="/#" class="ui-disabled">TBD</a></li>
-			<li><a href="/#" class="ui-disabled">TBD</a></li>
-			<li><a href="/#" class="ui-disabled">TBD</a></li>
-		</ul>
-	</div>
 
 	{% if current_user.has_role('admin') %}
 	<hr class="inset">
