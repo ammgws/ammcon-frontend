@@ -525,6 +525,14 @@
      fill="#e7d149"
      class="zmdi zmdi-lamp zmdi-hc-5x"></text>
   <text
+     id="bedroom1_light1"
+     text-anchor="middle"
+     font-size="24"
+     y="250"
+     x="255"
+     fill="#e7d149"
+     class="zmdi zmdi-lamp zmdi-hc-5x"></text>
+  <text
      id="bedroom2_light1"
      y="570"
      x="125"
