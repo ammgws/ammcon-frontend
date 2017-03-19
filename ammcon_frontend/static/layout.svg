@@ -78,76 +78,34 @@
        id="perspective4333" />
     <g id="tobira" class="tobira">
       <rect
-         inkscape:label="#rect4349-6-1-7"
          height="4"
          width="41"
-         id="tobira-a"
          style="stroke-width:2;" />
       <path
-         inkscape:label="#path4351-6-7"
-         sodipodi:nodetypes="ccc"
-         inkscape:connector-curvature="0"
-         id="tobira-b"
          d="m 40,4 -5,18 -5,-18"
          style="stroke-width:1.2;" />
     </g>
     <g id="door" class="door">
       <path
          d="m 366,417 c 1.71242,-22.07475 12.39394,-33.90399 39,-38 l 0,37"
-         style="fill-rule:evenodd;stroke-width:1.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-         id="path4268" />
+         style="fill-rule:evenodd;stroke-width:1.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
       <rect
          style="stroke-width:2;stroke-miterlimit:0;stroke-dasharray:none;stroke-opacity:1"
          width="41"
          height="4"
          x="365"
-         y="417"
-         inkscape:label="#rect4349-6-1-7"
-         id="rect4270" />
+         y="417" />
     </g>
     <g id="aircon_svg" class="interactive">
-      <rect
-         rx="5"
-         ry="5"
-         width="110"
-         height="40"
-         style="fill:none;stroke-width:3;"
-         id="rect3424" />
-      <line
-         stroke-width="2"
-         x1="20"
-         y1="25"
-         x2="90"
-         y2="25"
-         id="line3426" />
-      <line
-         stroke-width="2"
-         x1="20"
-         y1="29"
-         x2="90"
-         y2="29"
-         id="line3428" />
-      <line
-         stroke-width="2"
-         x1="20"
-         y1="33"
-         x2="90"
-         y2="33"
-         id="line3430" />
-      <line
-         stroke-width="2"
-         x1="20"
-         y1="33"
-         x2="15"
-         y2="40"
-         id="line3432" />
-      <line
-         stroke-width="2"
-         x1="90"
-         y1="33"
-         x2="95"
-         y2="40"
-         id="line3434" />
+      <rect rx="5" ry="5" width="110" height="40"
+            style="fill:none;stroke-width:3;" />
+      <g stroke-width="2">
+        <line x1="20" y1="25" x2="90" y2="25" />
+        <line x1="20" y1="29" x2="90" y2="29" />
+        <line x1="20" y1="33" x2="90" y2="33" />
+        <line x1="20" y1="33" x2="15" y2="40" />
+        <line x1="90" y1="33" x2="95" y2="40" />
+      </g>
     </g>
   </defs>
   <g
@@ -184,20 +142,24 @@
        id="window3" />
     <path
        class="window"
-       d="m 336.5,106.99999 95.5,0"
+       d="M 77,107 279,107"
+       id="window4" />
+    <path
+       class="window"
+       d="m 336.5,107 95.5,0"
        id="window5" />
     <path
        class="window"
-       d="M 76.999998,107 279,107"
-       id="window4" />
+       d="m 22,218.75 0,97.75"
+       id="window6" />
     <g id="tatami"
        class="misc"
        style="stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1">
-      <path d="m 229,110 0,203.99999" />
+      <path d="m 229,110 0,204" />
       <path d="m 281.72472,159.8713 0,104.1287" />
       <path d="m 330.5,159.8713 -101.5,0" />
       <path d="m 330.5,264 c -34.09832,0.26005 -67.90151,0.23978 -101.5,0" />
-      <path d="m 229.00001,212.00001 -48,0" />
+      <path d="m 229,212 -48,0" />
     </g>
     <g id="toilet" class="misc">
       <path
@@ -205,21 +167,15 @@
          d="m 294.5,506.5 0,-17.5 c -6.7549,-16.28956 -21.456,-12.68021 -25.85434,0.25" />
       <path
          style="stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         d="m 268.5,507 26,0 0,11.5 -26,0 z"
-         inkscape:connector-curvature="0"
-         sodipodi:nodetypes="ccccc" />
+         d="m 268.5,507 26,0 0,11.5 -26,0 z" />
       <path
          style="stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         d="M 268.5,506.5 268.69575,489"
-         inkscape:connector-curvature="0"
-         sodipodi:nodetypes="cc" />
+         d="M 268.5,506.5 268.69575,489" />
     </g>
     <g id="sink" class="misc">
       <path
          style="stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         d="m 310,427.25 15.31019,0.0367 c 31.46078,5.91719 18.88575,36.13966 -0.31019,34.41663 l -15,0.0467"
-         inkscape:connector-curvature="0"
-         sodipodi:nodetypes="cccc" />
+         d="m 310,427.25 15.31019,0.0367 c 31.46078,5.91719 18.88575,36.13966 -0.31019,34.41663 l -15,0.0467" />
       <ellipse
          style="stroke-width:1.62443316;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
          cx="326.47601"
@@ -236,90 +192,31 @@
     <g id="bath" class="misc">
       <path
          style="stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         d="m 321.36432,587.6233 c -6.20391,7.24381 -10.18248,26.3165 0,31.28945 23.76046,4.33477 49.09482,4.00641 75.63568,0"
-         inkscape:connector-curvature="0"
-         sodipodi:nodetypes="ccc" />
+         d="m 321.36432,587.6233 c -6.20391,7.24381 -10.18248,26.3165 0,31.28945 23.76046,4.33477 49.09482,4.00641 75.63568,0" />
       <path
          style="stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         d="m 396.80665,619 c 9.01847,-7.08756 9.09017,-20.44011 -0.55665,-31.5"
-         inkscape:connector-curvature="0"
-         sodipodi:nodetypes="cc" />
+         d="m 396.80665,619 c 9.01847,-7.08756 9.09017,-20.44011 -0.55665,-31.5" />
       <path
          style="stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-         d="m 321,587.75 75.63282,-0.1267"
-         inkscape:connector-curvature="0"
-         sodipodi:nodetypes="cc" />
+         d="m 321,587.75 75.63282,-0.1267" />
     </g>
-    <g
-       id="outline"
-       class="outline"
-       inkscape:label="#g4440">
-      <path
-         sodipodi:nodetypes="cccc"
-         inkscape:connector-curvature="0"
-         d="m 432,107 56.00472,0 -0.005,312 -27.49972,0" />
-      <path
-         sodipodi:nodetypes="ccc"
-         inkscape:connector-curvature="0"
-         d="m 485,367 -102.5,0 0,-53" />
-      <path
-         sodipodi:nodetypes="cc"
-         inkscape:connector-curvature="0"
-         d="m 227,314 0,50" />
-      <path
-         sodipodi:nodetypes="ccc"
-         inkscape:connector-curvature="0"
-         d="m 205,421 -27,0 0,46" />
-      <path
-         sodipodi:nodetypes="cc"
-         inkscape:connector-curvature="0"
-         d="m 174,627 195,0" />
-      <path
-         sodipodi:nodetypes="cc"
-         inkscape:connector-curvature="0"
-         d="m 229,593 0,31" />
-      <path
-         sodipodi:nodetypes="ccc"
-         inkscape:connector-curvature="0"
-         d="m 261,419 -6,0 0,100" />
-      <path
-         sodipodi:nodetypes="ccc"
-         inkscape:connector-curvature="0"
-         d="m 364,419 -57,0 0,205.3074" />
-      <path
-         sodipodi:nodetypes="cccc"
-         inkscape:connector-curvature="0"
-         d="m 403,627 7,0 0,-208 7.5,0" />
-      <path
-         sodipodi:nodetypes="ccc"
-         inkscape:connector-curvature="0"
-         d="m 22,571 0,56 103,0" />
-      <path
-         sodipodi:nodetypes="ccc"
-         inkscape:connector-curvature="0"
-         d="m 229,550 0,-28.01655 135,0" />
-      <path
-         inkscape:label="#path4292-6"
-         sodipodi:nodetypes="cccc"
-         inkscape:connector-curvature="0"
-         id="balcony-outer"
-         d="m 22.001196,218.75 0,-197.763337 465.998214,0 0,83.013337" />
-      <path
-         sodipodi:nodetypes="ccccc"
-         inkscape:connector-curvature="0"
-         d="m 178.00001,255.75 c 4.6e-4,85.66667 0.001,25.58333 0.002,111.25 L 333.5,367 333.5,107.02476 279,107" />
-      <path
-         sodipodi:nodetypes="cccccccc"
-         inkscape:connector-curvature="0"
-         d="m 209,470 -187,0 0,-153.5 m 3,-209.5 49,0 0,-63 208,0 0,60" />
-      <path
-         sodipodi:nodetypes="cc"
-         inkscape:connector-curvature="0"
-         d="m 178,419 0,-6" />
-      <path
-         d="M 178,174.5 178,110"
-         inkscape:connector-curvature="0"
-         sodipodi:nodetypes="cc" />
+    <g id="outline" class="outline">
+      <path d="m 432,107 56.00472,0 -0.005,312 -27.49972,0" />
+      <path d="m 485,367 -102.5,0 0,-53" />
+      <path d="m 227,314 0,50" />
+      <path d="m 205,421 -27,0 0,46" />
+      <path d="m 174,627 195,0" />
+      <path d="m 229,593 0,31" />
+      <path d="m 261,419 -6,0 0,100" />
+      <path d="m 364,419 -57,0 0,205.3074" />
+      <path d="m 403,627 7,0 0,-208 7.5,0" />
+      <path d="m 22,571 0,56 103,0" />
+      <path d="m 229,550 0,-28.01655 135,0" />
+      <path d="m 22.001196,218.75 0,-197.763337 465.998214,0 0,83.013337" />
+      <path d="m 178.00001,255.75 c 4.6e-4,85.66667 0.001,25.58333 0.002,111.25 L 333.5,367 333.5,107.02476 279,107" />
+      <path d="m 209,470 -187,0 0,-153.5 m 3,-209.5 49,0 0,-63 208,0 0,60" />
+      <path d="m 178,419 0,-6" />
+      <path d="M 178,174.5 178,110" />
     </g>
   </g>
   <g id="shuunou1"
@@ -334,14 +231,10 @@
        y="-318.995"/>
     <path
        style="stroke-width:1.2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;"
-       d="m 327.5,314.99743 -5,-18 -5,18"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccc"/>
+       d="m 327.5,314.99743 -5,-18 -5,18" />
     <path
        style="stroke-width:1.2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;"
-       d="m 243.5,315 -5,-18 -5,18"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccc"/>
+       d="m 243.5,315 -5,-18 -5,18" />
   </g>
   <g
      transform="translate(78,-224.24676)"
@@ -560,11 +453,4 @@
      class="temp_text"
      y="275"
      x="340">Temp:</text>
-  <path
-     class="window"
-     d="m 22,218.75 0,97.75"
-     id="window1-3"
-     inkscape:connector-curvature="0"
-     sodipodi:nodetypes="cc"
-     inkscape:label="#path4241" />
 </svg>
