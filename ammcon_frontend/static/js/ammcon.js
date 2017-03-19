@@ -44,13 +44,12 @@ $(function() {
     $.getJSON($SCRIPT_ROOT + '/command', {
       command: $(this).data("ammcon_cmd")
     }, function(data) {
-      // redirect back to homepage to reauthorise
+      // If not authorised, redirect back to homepage.
       if (data.redirect) {
         window.location.replace(data.redirect);
       }
       else {
-        $("#response").text(data.response + '@' + data.time);
-        // use nd2 toast-notify to display response
+        // Use nd2 toast-notify to display response.
         notify(data.response + '@' + data.time);
       }
     });
