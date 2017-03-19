@@ -29,7 +29,7 @@ li.ui-tabs-active > .ui-link.ui-btn.ui-tabs-anchor,
 .ui-page-theme-a a, html .ui-bar-a a, html .ui-body-a a, html body .ui-group-theme-a a,
 .ui-page-theme-a a:hover, html .ui-bar-a a:hover, html .ui-body-a a:hover, html body .ui-group-theme-a a:hover,
 .ui-page-theme-a a:visited, html .ui-bar-a a:visited, html .ui-body-a a:visited, html body .ui-group-theme-a a:visited  {
-	color: #000000;
+	color: #ffffff;
 }
 
 .ui-page-theme-a .ui-btn.clr-warning {

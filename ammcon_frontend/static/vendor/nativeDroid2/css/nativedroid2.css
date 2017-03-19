@@ -91,7 +91,7 @@ blockquote {
 	background-color: #f6f6f6;
 	padding: 7px 28px;
 	margin-bottom: 54px;
-	color: rgba(0, 0, 0, 0.87);
+	color: rgba(21, 21, 21, 0.87);
 }
 
 blockquote:after {
@@ -161,7 +161,7 @@ code {
 .ui-overlay-a, .ui-page-theme-a, .ui-page-theme-a .ui-panel-wrapper {
 	background-color: #ffffff;
 	border-color: rgba(0,0,0,.87);
-	color: rgba(0, 0, 0, 0.87);
+	color: rgba(21, 21, 21, 0.87);
 }
 
 .ui-content.ui-content-nopadding {
@@ -428,7 +428,7 @@ code {
 }
 
 .ui-listview > li p {
-	color: rgba(0, 0, 0, 0.54);
+	color: rgba(21, 21, 21, 0.54);
 	font-size: 14px;
 }
 

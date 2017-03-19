@@ -92,3 +92,7 @@ svg.light_icon{
 .ui-collapsible.ui-collapsible {
 	background-color: #000000;
 }
+
+.ui-body-a, .ui-page-theme-a .ui-body-inherit, html .ui-bar-a .ui-body-inherit, html .ui-body-a .ui-body-inherit, html body .ui-group-theme-a .ui-body-inherit, html .ui-panel-page-container-a {
+    color: rgba(255, 255, 255, 0.87);
+}
