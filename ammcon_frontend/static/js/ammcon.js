@@ -12,32 +12,33 @@ notify = function(message) {
             },
             color : "lime"
         },
-        ttl : 3000
+        ttl : 2000
     });
 }
 
-temp_function = function (temp_command) {
-    $.getJSON($SCRIPT_ROOT + '/data/' + temp_command.substring(4), {
-        }, function(data) {
-          // redirect back to homepage to reauthorise
+// Update temperatures shown in SVG.
+temp_update = function (temp_command, enable_notifications=true) {
+    $.getJSON($SCRIPT_ROOT + '/data/' + temp_command.substring(4), {}, function(data) {
+          // If not authorised, redirect back to homepage.
           if (data.redirect) {
             window.location.replace(data.redirect);
           }
           else {
             if (data.temperature != null) {
-                //log(data.temperature + "°C " + data.humidity + "%")
-                return data.temperature + "°C " + data.humidity + "%";
+                document.getElementById(temp_command).textContent = data.temperature + "°C " + data.humidity + "%";
             }
-            else{
-                return false;
+            else {
+                // Otherwise no data was returned by the backend.
+                if (enable_notifications == true) {
+                    notify("No data available - sensor offline?");
+                }
             }
           }
         });
-        return false;
 }
 
-// call backend when user clicks on a command in command menu
-// this event handler is registered on 'document ready'
+// Call backend when user clicks on a command in command menu.
+// This event handler is registered on 'document ready'.
 $(function() {
   $('[data-ammcon]').on('click', function() {
     $.getJSON($SCRIPT_ROOT + '/command', {
@@ -58,63 +59,28 @@ $(function() {
   });
 });
 
-// on click, update the displayed temperature/humidity for the given room
-// this event handler is registered on 'document ready'
-$(function() {
-  $('.temp').on('click', function() {
-    temp_command = $(this).attr("id");
-    // for debugging purposes:
-    //alert(temp_command)
-    //log(temp_command)
-    $.getJSON($SCRIPT_ROOT + '/data/' + temp_command.substring(4), {
-
-    }, function(data) {
-      // redirect back to homepage to reauthorise
-      if (data.redirect) {
-        window.location.replace(data.redirect);
-        //$(location).attr('href', data.redirect));
-      }
-      else {
-        //window.console&&console.log(moment(data.datetime).format("Y/mm/dd_HH:MM:SS"));
-        if (data.temperature != null) {
-            $("#" + temp_command).text(data.temperature + "°C " + data.humidity + "%");
-            $("#" + temp_command).attr("title", "Data from " + moment(data.datetime).format("Y/MM/DD HH:MM:SS"));
-
-            document.getElementById('temp1').textContent = data.temperature + "°C " + data.humidity + "%";
-
-        }
-        else {
-            //do nothing
-            // use nd2 toast-notify to display error message
-            notify("No data available - sensor offline?");
-        }
-      }
-    });
-    return false;
-  });
-});
-
+// Load house layout SVG and register the various click handlers.
 $(function() {
     $('#layout_main').load($SCRIPT_ROOT + 'static/layout.svg', null, function(data, status, xhr) {
-
         //TODO: refactor code, reuse functions etc
 
-        //document.getElementById('temp1').textContent = temp_function("temp1");
+        // Update temperature values on first load (but disable notifications).
+        temp_update("temp1", false);
+        temp_update("temp2", false);
+        temp_update("temp3", false);
 
-        document.getElementById('temp1').textContent = temp_function("temp1");
-        document.getElementById('temp2').textContent = temp_function("temp2");
-        document.getElementById('temp3').textContent = temp_function("temp3");
+        // Register click handlers to allow user to refresh temps.
         $('#temp1').click(function() {
-            //temp_function("temp1");
-            document.getElementById('temp1').textContent = "18.25°C 37%"
+            temp_update("temp1");
         });
         $('#temp2').click(function() {
-            document.getElementById('temp2').textContent = "19.25°C 35%"
+            temp_update("temp2");
         });
         $('#temp3').click(function() {
-            document.getElementById('temp3').textContent = "17.25°C 36%"
+            temp_update("temp3");
         });
 
+        // Register click handlers for lights, aircon, etc.
         $("#living_light1").click(function() {
             $("#living1_light_menu").panel("open");
         });
@@ -144,7 +110,6 @@ $(function() {
         $("#bedroom3_aircon").click(function() {
             $("#bedroom3_aircon_menu").panel("open");
         });
-
     });
 });
 
