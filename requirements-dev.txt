@@ -1,0 +1,14 @@
+#
+# Development packages for ammcon-frontend
+#
+
+Flask==0.12
+Flask-Admin==1.5.0
+Flask-Security==1.7.5
+Flask-SQLAlchemy==2.2
+gunicorn==19.7.1
+pyzmq==16.0.2
+rauth==0.7.3
+requests==2.13.0
+simplejson==3.10.0
+zmq==0.0.0
