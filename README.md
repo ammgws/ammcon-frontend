@@ -2,8 +2,7 @@
 
 Frontend for [Ammcon](https://github.com/ammgws/ammcon) home automation script
 
-Install from GitHub
-
+### Installation
 Master:
 pip install git+https://github.com/ammgws/ammcon-frontend.git@master
 
