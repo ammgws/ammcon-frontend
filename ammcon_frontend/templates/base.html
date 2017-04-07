@@ -31,7 +31,7 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flexboxgrid/6.3.1/flexboxgrid.css"
               integrity="sha256-ubvj3mrLNgqb9E8l9SQwM4LyVQntUtVQgHMuFgGD7GU="
               crossorigin="anonymous" />
-        {# Move Material Design Iconic Font CSS import from nativedroid2.css to CDN
+        {# Move Material Design Iconic Font CSS import from nativedroid2.css to CDN.
            nativeDroid2 uses 2.0.2 as of v2.0.3. #}
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/material-design-iconic-font/2.2.0/css/material-design-iconic-font.min.css"
               integrity="sha256-3sPp8BkKUE7QyPSl6VfBByBroQbKxKG7tsusY2mhbVY="
@@ -118,7 +118,13 @@
 
         <style>
             /* Prevent FOUC */
-            body { opacity: 0; }
+            html {
+                background-color: black;
+            }
+            body {
+                opacity: 0;
+                background-color: black;
+            }
         </style>
 
         <!-- favicons -->
