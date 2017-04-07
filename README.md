@@ -1,6 +1,6 @@
 # ammcon-frontend
 
-Frontend for (Ammcon)[https://github.com/ammgws/ammcon] home automation script
+Frontend for [Ammcon](https://github.com/ammgws/ammcon) home automation script
 
 Install from GitHub
 
