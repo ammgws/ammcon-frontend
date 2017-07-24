@@ -81,14 +81,10 @@ svg.light_icon{
 
 /* for desktop */
 @media only screen and (min-width: 600px) {
-    html {
-        background: #000000;
-    }
-
     .ui-page {
         width: 600px !important;
         margin: 0 auto !important;
-        /*position: relative !important;*/
+        position: relative !important;
         border-right: 5px #666 outset !important;
         border-left: 5px #666 outset !important;
     }
@@ -96,9 +92,9 @@ svg.light_icon{
 
 /* main page text */
 .ui-overlay-a, .ui-page-theme-a, .ui-page-theme-a .ui-panel-wrapper {
-	/*background-color: #ffffff;
-	border-color: rgba(0,0,0,.87);*/
-	color: rgba(255, 255, 255, 0.87);
+    /*background-color: #ffffff;
+    border-color: rgba(0,0,0,.87);*/
+    color: rgba(255, 255, 255, 0.87);
 }
 
 /* side panel background */
