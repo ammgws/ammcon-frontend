@@ -9,6 +9,6 @@ Flask-SQLAlchemy==2.2
 gunicorn==19.7.1
 pyzmq==16.0.2
 rauth==0.7.3
-requests==2.13.0
+requests==2.20.0
 simplejson==3.10.0
 zmq==0.0.0
