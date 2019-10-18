@@ -1,3 +1,5 @@
+NOTE: No longer maintained as moved to Home Assistant.
+
 # ammcon-frontend
 
 Frontend for [Ammcon](https://github.com/ammgws/ammcon) home automation script
